@@ -51,7 +51,7 @@ def Move():
     vel (velocidade linear e angular do motor)
     '''
     rospy.init_node('hulk_manual_node', anonymous=True)
-    velocity_publisher = rospy.Publisher('/hulk_move', Twist, queue_size=10)
+    velocity_publisher = rospy.Publisher('/velocidade_hulk', Twist, queue_size=10)
     #velocity_publisher = rospy.Publisher('/pioneer2dx/cmd_vel', Twist, queue_size=10)
     vel = Twist()
 
