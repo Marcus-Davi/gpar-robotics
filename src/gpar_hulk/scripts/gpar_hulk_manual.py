@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 import rospy
@@ -105,6 +105,7 @@ def Move():
 
             velocity_publisher.publish(vel)
             rospy.loginfo(vel)
+            #provavelmente desnecessário a parte de baixo.
             time.sleep(1.5)
             vel.linear.x  =  0.0
             vel.angular.z =  0.0
