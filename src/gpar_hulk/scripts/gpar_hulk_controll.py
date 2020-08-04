@@ -13,6 +13,10 @@ max_vel = 25000 #rpm
 max_vel_ang = 2 * max_vel / dist_hulk
 
 def recieveData(vel):
+    """ 
+    A velocidade recebida é uma proporção da velocidade máxima de cada roda e deve
+    estar sempre entre -1 e 1.
+    """
 
     v = vel.linear.x * max_vel 
     w = vel.angular.z * max_vel_ang
@@ -20,6 +24,13 @@ def recieveData(vel):
     vd_rad = (v+w*dist_hulk)
     ve_rad = (v-w*dist_hulk)
 
+    '''
+    formulas vistas no curso de robótica
+
+    vd = (2*v + w*dist_hulk) / 2*raio_hulk
+    ve = (2*v - w*dist_hulk) / 2*raio_hulk
+    
+    '''
     vd = int(vd_rad/max_vel *1000)
     ve = int(ve_rad/max_vel *1000)
 
