@@ -44,7 +44,7 @@ def main():
     drive = gpar_hulk_HDC2450.hdc2450()
 
     rospy.init_node('gpar_hulk_controll', anonymous=True)
-    rospy.Subscriber('/hulk_move', String, recieveData())
+    rospy.Subscriber('/velocidade_hulk', String, recieveData())
     #rospy.Subscriber('/pioneer2dx/cmd_vel', String, recieveData())
     
     rospy.spin()
