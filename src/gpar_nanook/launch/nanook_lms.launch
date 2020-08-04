@@ -1,0 +1,13 @@
+<launch>
+ 	<node pkg="gpar_nanook" type="gpar_nanook_node" name="nanook_node" output="screen">
+	<!-- node parameters -->
+	<param name="serial_port" type="string" value="/dev/ttyACM0"/>
+	<param name="publish_odom" type="bool" value="false" />
+	</node>
+	<!-- aqui eh ttyACM0 pq desligamos o URG_node" -->
+
+	<node pkg="gpar_nanook" type="gpar_nanook_gps" name="nanook_gps" />
+
+
+	<include file="$(find gpar_lidar)/launch/lms.launch" />
+</launch>
