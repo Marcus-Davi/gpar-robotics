@@ -50,24 +50,17 @@ def go2goal(xgoal = 0, ygoal = 0, thetagoal = 0):
 
     while not rospy.is_shutdown():
         rate.sleep()
-
         if(v > tol):
-
-
-
-            
             errox = goal.x - position.x 
             erroy = goal.y - position.y     
             
             ux = errox
             uy = erroy
 
-            
-
             theta_r = atan2(uy, ux)
 
             v = sqrt(ux**2 + uy**2)
-            rospy.loginfo(v)
+            #rospy.loginfo(v)
             errot = theta_r - position.theta # erro do angulo theta
 
             erro_acumulado += errot 
@@ -80,8 +73,6 @@ def go2goal(xgoal = 0, ygoal = 0, thetagoal = 0):
             elif(v < -0.7):
                 v = -0.7
 
-
-
             vel.linear.x = v
             vel.linear.y = 0
             vel.linear.z = 0
@@ -92,7 +83,7 @@ def go2goal(xgoal = 0, ygoal = 0, thetagoal = 0):
 
             #rospy.loginfo(vel)
             velocity_publisher.publish(vel)
-            rospy.logwarn(vel)
+            #rospy.logwarn(vel)
 
             #updates
             past_erro = errot
@@ -120,12 +111,16 @@ def updatePose(pose):
 
 if __name__ == "__main__":
     try:
-
-
         # Fazer lista
-        x = 3
-        y = 1
+        try:
+            x = float(sys.argv[1])
+            y = float(sys.argv[2])
+        except:
+            x = 3
+            y = 1
+
         theta = 0
+        print(x,y)
         go2goal(x,y,theta)
         
 
