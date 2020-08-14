@@ -138,6 +138,7 @@ include_directories(
 add_executable(hulk_move_node src/hulk_move.cpp)
 add_executable(hulk_node src/hulk_node.cpp)
 add_executable(hulk_velocidade_node src/leitura_velocidade.cpp)
+add_executable(simple_control_node src/simple_control.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -163,6 +164,11 @@ target_link_libraries(hulk_move_node
 target_link_libraries(hulk_velocidade_node
   ${catkin_LIBRARIES}
 )
+target_link_libraries(simple_control_node
+  ${catkin_LIBRARIES}
+)
+
+
 
 #############
 ## Install ##
