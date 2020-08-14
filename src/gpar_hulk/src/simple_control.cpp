@@ -42,15 +42,17 @@ int main(int argc, char **argv){
 
 	ros::Publisher pub_vel = n.advertise<geometry_msgs::Point>("/comando1",1000);
 	
-
+	ros::Rate r(20);
 	if ((n.getParam("X",x)) && (n.getParam("Y",y)))
 		std::cout<<"Parametros X e Y lidos com sucesso, x = "<<x<<" y = "<<y;
 	
+
 	while(ros::ok()){	
 		velocidade.x = (2*v-w*L)/(2*R); //Velocidade da Roda Esquerda
 		velocidade.y = (2*v+w*L)/(2*R); //Velocidade da Roda Direita
 		
 		pub_vel.publish(velocidade);
+		r.sleep();
 
 	ros::spinOnce();
 	}
