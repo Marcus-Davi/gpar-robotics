@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-
 import rospy
 from geometry_msgs.msg import Twist, Pose2D, Vector3
 from turtlesim.msg import Pose
@@ -119,9 +118,9 @@ if __name__ == "__main__":
         # Fazer lista
         path = list()
         theta = 0
-        path = paths.circulo()
+        path = paths.quadrado()
 
-        print(path)
+        #print(path)
         for points in path:
             x = points[0]
             y = points[1]   

@@ -1,4 +1,4 @@
-from math import pi, cos, sin
+#import matplotlib.pyplot as plt #Visualização dos pontos
 
 def quadrado(lado = 2):
     '''Função que retorna um list() com tuplas correspondendo as 
@@ -14,17 +14,3 @@ def quadrado(lado = 2):
 
     return points
 
-
-def circulo(raio = 2):
-    '''Função que retorna uma list() com tuplas correspondendo a 10
-    pontos de uma circunferencia com raio "raio" (padrão = 1).
-    Robo começa no ponto (0,0) que pertence a circunferencia.
-    '''
-
-    npoints = 100
-    points = list()
-    for t in range(100):
-        x = t * 2*pi/ npoints
-        points.append((cos(x)*raio + raio, sin(x)*raio))
-
-    return points
