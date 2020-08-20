@@ -19,9 +19,11 @@ void Dados_Posicao(const geometry_msgs::Point::ConstPtr& posicao_atual){
 	erroy = y[contador] - posicao_atual->y;
 	
 	//Obs: em z foi colocado o theta, já que a posição Z não é utilizada.
-	theta = atan2(erroy,errox);
+	theta = atan2(erroy,errox);	
 	
 	u = theta - posicao_atual->z;
+
+	u = atan2(sin(u),cos(u));
 
 	w = Kp*u;
 	
