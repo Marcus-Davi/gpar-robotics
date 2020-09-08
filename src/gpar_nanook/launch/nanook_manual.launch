@@ -1,7 +1,12 @@
+<?xml version="1.0"?>
 <launch>
- 	<node pkg="gpar_nanook" type="gpar_nanook_manual_node" name="nanook_node" output="screen">
+	<node pkg="gpar_nanook" type="gpar_nanook_node" name="gpar_nanook_node" output="screen" >
 	<!-- node parameters -->
 	<param name="serial_port" type="string" value="/dev/ttyACM0"/>
-
+	<param name="publish_odom" type="bool" value="true" />
 	</node>
+
+
+	<node pkg="gpar_nanook" type="gpar_nanook_manual" name="gpar_nanook_manual" output="screen" />
+
 </launch>

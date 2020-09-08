@@ -35,11 +35,12 @@
 sensor_msgs::NavSatFix ParseGPS(const std::string& msg);
 
 
-   const unsigned char 	AlwaysLocateMode[]={"$PMTK225,8*23\r\n"};
-   const unsigned char StandbyMode[] = {"$PMTK161,0*28\x0D\x0A"};
-   const unsigned char SetHertz[] = {"$PMTK220,100*2F\r\n"};
-   const unsigned char GGAMode[] = {"$PMTK314,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0*29\r\n"};
-   const unsigned char GLLMode[] = {"$PMTK314,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0*29\r\n"};
+const unsigned char 	AlwaysLocateMode[]={"$PMTK225,8*23\r\n"};
+const unsigned char StandbyMode[] = {"$PMTK161,0*28\x0D\x0A"};
+const unsigned char SetHertz[] = {"$PMTK220,100*2F\r\n"};
+const unsigned char GGAMode[] = {"$PMTK314,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0*29\r\n"};
+const unsigned char GLLMode[] = {"$PMTK314,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0*29\r\n"};
+const unsigned char RMCMode[] = {"$PMTK314,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0*29\r\n"};
 
 
 /**
@@ -47,131 +48,149 @@ sensor_msgs::NavSatFix ParseGPS(const std::string& msg);
  */
 int main(int argc, char **argv)
 {
-  /**
-   * The ros::init() function needs to see argc and argv so that it can perform
-   * any ROS arguments and name remapping that were provided at the command line.
-   * For programmatic remappings you can use a different version of init() which takes
-   * remappings directly, but for most command-line programs, passing argc and argv is
-   * the easiest way to do it.  The third argument to init() is the name of the node.
-   *
-   * You must call one of the versions of ros::init() before using any other
-   * part of the ROS system.
-   */
+		/**
+		 * The ros::init() function needs to see argc and argv so that it can perform
+		 * any ROS arguments and name remapping that were provided at the command line.
+		 * For programmatic remappings you can use a different version of init() which takes
+		 * remappings directly, but for most command-line programs, passing argc and argv is
+		 * the easiest way to do it.  The third argument to init() is the name of the node.
+		 *
+		 * You must call one of the versions of ros::init() before using any other
+		 * part of the ROS system.
+		 */
 
-  ros::init(argc, argv, "mcuserial_node");
+		ros::init(argc, argv, "mcuserial_node");
 
-  /**
-   * NodeHandle is the main access point to communications with the ROS system.
-   * The first NodeHandle constructed will fully initialize this node, and the last
-   * NodeHandle destructed will close down the node.
-   */
-  ros::NodeHandle nh;
+		/**
+		 * NodeHandle is the main access point to communications with the ROS system.
+		 * The first NodeHandle constructed will fully initialize this node, and the last
+		 * NodeHandle destructed will close down the node.
+		 */
+		ros::NodeHandle nh;
+		ros::NodeHandle private_nh("~");
 
-  //ros::NodeHandle n("~");
+		//ros::NodeHandle n("~");
 
-  std::string porta_serial;
-  sensor_msgs::NavSatFix GpsData;
+		std::string porta_serial = "/dev/ttyUSB0";
+		sensor_msgs::NavSatFix GpsData;
 
-
-porta_serial = "/dev/ttyS0"; //Hardware UART
-
-
-  serial::Serial mcu_serial(porta_serial,57600,serial::Timeout::simpleTimeout(1000));
-if(mcu_serial.isOpen()){
- ROS_INFO("Porta Serial aberta!");
-} else {
- ROS_INFO("Problema ao abrir a porta %s ! ela existe?",porta_serial.c_str());
-return -1;
-}
+		if ( !private_nh.getParam("serial_port",porta_serial) ) {
+				ROS_WARN("Setting default serial port -> %s",porta_serial.c_str());
+		}
 
 
 
- ros::Publisher pub = nh.advertise< sensor_msgs::NavSatFix>("gps",100);
- mcu_serial.write(AlwaysLocateMode,sizeof(AlwaysLocateMode));
- ros::Duration(0.1).sleep();
- mcu_serial.write(GLLMode,sizeof(GLLMode));
- ros::Duration(0.1).sleep();
- mcu_serial.write(SetHertz,sizeof(SetHertz));
-
-
- std::string data;
-
- ros::Rate r(20);
-	
-	//Escrever algum código que verifique se o Nanook tá ok!
-while(ros::ok()){
-
-//	ROS_INFO("getting data");
-	data = mcu_serial.readline(200,"\r"); //Le ate 100 bytes
-//	ROS_INFO("got data!");
-//	ROS_INFO("parsing");
-GpsData = ParseGPS(data);
-//ROS_INFO("parsed... publishing");
-
-pub.publish(GpsData);
-//ROS_INFO("published");
+		serial::Serial mcu_serial(porta_serial,57600,serial::Timeout::simpleTimeout(1000));
+		if(mcu_serial.isOpen()){
+				ROS_INFO("Porta Serial aberta!");
+		} else {
+				ROS_INFO("Problema ao abrir a porta %s ! ela existe?",porta_serial.c_str());
+				return -1;
+		}
 
 
 
+		ros::Publisher pub = nh.advertise< sensor_msgs::NavSatFix>("gps",100);
+		mcu_serial.write(AlwaysLocateMode,sizeof(AlwaysLocateMode));
+		ros::Duration(0.1).sleep();
+		// mcu_serial.write(GLLMode,sizeof(GLLMode));
+		mcu_serial.write(RMCMode,sizeof(RMCMode));
+		ros::Duration(0.1).sleep();
+		mcu_serial.write(SetHertz,sizeof(SetHertz));
+
+
+		std::string data;
+
+		ros::Rate r(20);
+
+		//Escrever algum código que verifique se o Nanook tá ok!
+		while(ros::ok()){
+
+				//	ROS_INFO("getting data");
+				data = mcu_serial.readline(200,"\r"); //Le ate 100 bytes
+				//	ROS_INFO("got data!");
+				//	ROS_INFO("parsing");
+				GpsData = ParseGPS(data);
+				//ROS_INFO("parsed... publishing");
+
+				pub.publish(GpsData);
+				//ROS_INFO("published");
 
 
 
 
-
-ros::spinOnce();
-r.sleep();
-
-
-}
+				ros::spinOnce();
+				r.sleep();
 
 
-  return 0;
+		}
+
+
+		return 0;
 }
 
 
 sensor_msgs::NavSatFix ParseGPS(const std::string& msg){
-	sensor_msgs::NavSatFix GPS;
-//	ROS_INFO("msg = %s",msg.c_str());
-	GPS.header.stamp = ros::Time::now();
-	char* ptr;
-	double lat,lat_d,lat_m;
-	double lon,lon_d,lon_m;
-//	ROS_INFO("getting GPGLL");
-	ptr = strstr((char*)msg.c_str(),"GPGLL");
-	if(!ptr){
-		return GPS;
-		ROS_INFO("GPGLL not found!");
-	}
-	ROS_INFO("Sentence : %s",ptr);
-	ptr = strchr((char*)msg.c_str(),','); // look for comma
+		sensor_msgs::NavSatFix GPS;
+		//	ROS_INFO("msg = %s",msg.c_str());
+		GPS.header.stamp = ros::Time::now();
+		char* ptr;
+		double lat,lat_d,lat_m;
+		double lon,lon_d,lon_m;
 
-//	ROS_INFO("ptr OK %s.. atofing",ptr);
-	lat = atof(++ptr);
-//	ROS_INFO("atof ok",ptr);
+
+		int lat_signal = 1;
+		int lon_signal = 1;
+
+		//	ROS_INFO("getting GPGLL");
+		ptr = strstr((char*)msg.c_str(),"GPRMC");
+		if(!ptr){
+				ROS_INFO("GPGLL not found!");
+				return GPS;
+		}
+		ROS_INFO("Sentence : %s",ptr);
+		ptr = strchr((char*)msg.c_str(),','); // look for first comma
+		ptr = strchr((char*)++ptr,','); // look for 2nd comma
+		ptr = strchr((char*)++ptr,','); // look for 3rd comma
+
+		//	ROS_INFO("ptr OK %s.. atofing",ptr);
+		lat = atof(++ptr);
+		//	ROS_INFO("atof ok",ptr);
 		if(lat == 0){
-			GPS.latitude = 0;
-			GPS.longitude = 0;
-			GPS.status.status = -1; //NO FIX!
+				GPS.latitude = 0;
+				GPS.longitude = 0;
+				GPS.status.status = -1; //NO FIX!
 		} else {
-			ptr = strchr((char*)ptr,','); //procura 2a virgula ddmm.mmmm
-			ptr = strchr((char*)++ptr,','); //procura 3a virgula dddmm.mmmm
-			lon = atof(++ptr);
-			lat_d = floorf(lat/100); //graus
-			lat_m = (lat/100.0 - lat_d)*1.66666666666666; //isola os minutos, converte para décimos de graus (1 min = 1/60 grau)
-//			//exemplo : min = 44.6567. 44.6567/60 = 0.744
-			lon_d = floorf(lon/100); //graus
-			lon_m = (lon/100.0 - lon_d)*1.6666666666666;//isola os minutos, converte para décimos de graus
-			GPS.latitude = lat_d + lat_m;
-			GPS.longitude = lon_d + lon_m;
-			GPS.status.status = 0;
+				ptr = strchr((char*)ptr,','); //procura 2a virgula ddmm.mmmm
+				if (*(ptr+1) == 'S')
+						lat_signal = -1;
+
+				ptr = strchr((char*)++ptr,','); //procura 3a virgula dddmm.mmmm
+				lon = atof(++ptr);
+				lat_d = floorf(lat/100); //graus
+				lat_m = (lat/100.0 - lat_d)*1.66666666666666; //isola os minutos, converte para décimos de graus (1 min = 1/60 grau)
+				//			//exemplo : min = 44.6567. 44.6567/60 = 0.744
+				lon_d = floorf(lon/100); //graus
+				lon_m = (lon/100.0 - lon_d)*1.6666666666666;//isola os minutos, converte para décimos de graus
+				ptr = strchr((char*)ptr,',');
+				if(*(ptr+1) == 'W')
+						lon_signal = -1;
+
+				GPS.latitude = lat_signal * (lat_d + lat_m);
+				GPS.longitude = lon_signal *(lon_d + lon_m);
+				GPS.status.status = 0;
 		}
 
 
-//		ROS_INFO("4:: RETURNING GPS..");
+		// TODO converter e publichar velocidades 
 
 
 
-	return GPS;
+		//		ROS_INFO("4:: RETURNING GPS..");
+
+
+
+		return GPS;
 
 }
 

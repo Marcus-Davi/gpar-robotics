@@ -137,12 +137,12 @@ while(ros::ok())
       case KEYCODE_L:
         ROS_INFO("LEFT");
         velocities.linear.x = 0;
-        velocities.angular.z = 0.2;
+        velocities.angular.z = 0.5;
         break;
       case KEYCODE_R:
         ROS_INFO("RIGHT");
         velocities.linear.x = 0;
-        velocities.angular.z = -0.2;
+        velocities.angular.z = -0.5;
         break;
       case KEYCODE_U:
         ROS_INFO("UP");
