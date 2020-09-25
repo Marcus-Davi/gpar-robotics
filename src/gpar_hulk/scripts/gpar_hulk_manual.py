@@ -1,8 +1,8 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python2.7
 # -*- coding: utf-8 -*-
 
 import rospy
-from geometry_msgs.msg import Twist
+from    geometry_msgs.msg import Twist
 import sys,tty,termios, time
 
 class _Getch:
@@ -81,23 +81,23 @@ def Move():
             #Valor padrao do hulk é 2.0. Simulação recebe 50
             if arow == KEYCODE_UP :
                     print ("up")
-                    vel.linear.x  =  50.0
+                    vel.linear.x  =  0.5
                     vel.angular.z =  0.0
 
             elif arow == KEYCODE_DOWN:
                     print ("down")
-                    vel.linear.x  = -50.0
+                    vel.linear.x  = -0.5
                     vel.angular.z =  0.0
 
             elif arow == KEYCODE_RIGHT:
                     print ("right")
                     vel.linear.x  =  0.0
-                    vel.angular.z =  50.0
+                    vel.angular.z =  0.5
 
             elif arow == KEYCODE_LEFT:
                     print ("left")
                     vel.linear.x  =  0.0
-                    vel.angular.z = -50.0
+                    vel.angular.z = -0.5
             else:
                     print ("not an arrow key!")
                     ctr = 1

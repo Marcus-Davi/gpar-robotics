@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 
 import sys
-import rospy
-from geometry_msgs.msg import Twist
 import serial
 
 
@@ -11,11 +9,16 @@ TODOS AS FUNÇÕES SERÃO ALTERADAS QUANDO ESTIVER
 FEITO A PARTE DE ENVIO E LEITURA PELA SERIAL.
 '''
 
-class getValue:
-    def __init__(uart):
-        self.serial = uart
+'''
+MOTOR 1 -> DIREITA
+MOTOR 2-> ESQUERDA
+'''
 
-    def readMotorAmps():
+class GetValue:
+    def __init__(self, uart):
+        serial = uart
+
+    def readMotorAmps(self):
         #RECEBER OS DADOS E RETORNAR UM VETOR COM O VALOR DOS DOIS DADOS
         serial.write('?A'+'\r')
         serial.read_until('\r')
@@ -24,7 +27,7 @@ class getValue:
         return receivedData 
         
 
-    def readBatteryAmps():
+    def readBatteryAmps(self):
         serial.write('?BA R:'+'\r')
         serial.read_until('\r')
         receivedData = str(serial.read_until('\r'))
@@ -32,42 +35,42 @@ class getValue:
         return receivedData 
 
 
-    def readEncoderCounteAbsolute(motorch)
+    def readEncoderCounteAbsolute(self, motorch):
         serial.write('?C ' + str(motorch)+'\r')
         serial.read_until('\r')
         receivedData = str(serial.read_until('\r'))
         receivedData = receivedData.split('=')[1]
         return receivedData
 
-    def readEncoderCountRelative(motorch):
+    def readEncoderCountRelative(self, motorch):
         serial.write('?CR ' + str(motorch)+'\r')
         serial.read_until('\r')
         receivedData = str(serial.read_until('\r'))
         receivedData = receivedData.split('=')[1]
         return receivedData
 
-    def readClosedLoopError(motorch):
+    def readClosedLoopError(self, motorch):
         serial.write('?E ' + str(motorch)+'\r')
         serial.read_until('\r')
         receivedData = str(serial.read_until('\r'))
         receivedData = receivedData.split('=')[1]
         return receivedData    
     
-    def readFeedback(motorch):
+    def readFeedback(self, motorch):
         serial.write('?F ' + str(motorch)+'\r')
         serial.read_until('\r')
         receivedData = str(serial.read_until('\r'))
         receivedData = receivedData.split('=')[1]
         return receivedData 
 
-    def readMotorPowerOutputApplied(motorch):
+    def readMotorPowerOutputApplied(self, motorch):
         serial.write('?P ' + str(motorch)+'\r')
         serial.read_until('\r')
         receivedData = str(serial.read_until('\r'))
         receivedData = receivedData.split('=')[1]
         return receivedData 
 
-    def readEncoderMotorSpeedinRPM(motorch):
+    def readEncoderMotorSpeedinRPM(self, motorch):
         serial.write('?S ' + str(motorch)+'\r')
         serial.read_until('\r')
         receivedData = str(serial.read_until('\r'))
@@ -75,15 +78,16 @@ class getValue:
         return receivedData 
 
 
-    def readEncoderSpeedRelative(motorch):
+    def readEncoderSpeedRelative(self, motorch):
         serial.write('?SR ' + str(motorch)+'\r')
         serial.read_until('\r')
         receivedData = str(serial.read_until('\r'))
         receivedData = receivedData.split('=')[1]
         return receivedData 
 
-    def readTemperature(channel)
-    ''' channel 1: MCU
+    def readTemperature(self, channel):
+        ''' 
+        channel 1: MCU
         channel 2: channel1 side
         channel 3: channel2 side'''
         serial.write('?T ' + str(motorch)+'\r')
@@ -93,15 +97,16 @@ class getValue:
         return receivedData 
 
 
-     def readPositionRelativeTracking(motorch)
+    def readPositionRelativeTracking(self, motorch):
         serial.write('?TR ' + str(motorch)+'\r')
         serial.read_until('\r')
         receivedData = str(serial.serial.read_until('\r'))
         receivedData = receivedData.split('=')[1]
         return receivedData 
 
-        def readVolts():
-    ''' 1 : Internal volts
+    def readVolts(self):
+        ''' 
+        1 : Internal volts
         2 : Battery volts
         3 : 5V output'''  
         serial.write('?V'+'\r')
@@ -110,40 +115,39 @@ class getValue:
         receivedData = receivedData.split('=')[1].split(':')
         return receivedData 
 
-class setCommand:
-    def __init__(uart):
+class SetCommand:
+    def __init__(self, uart):
         self.serial = uart
 
-    def sendData(sendData)
-        self.serial.write(sendData)
-        receivedData = self.serial.read_until('\r')
-        self.serial.read_until('\r')
-        if (sendData == receivedData)
-            return 1
-        else:
-            return -1
+    def sendData(self, sendData):
+        print(sendData.encode())
+        self.serial.write(sendData.encode())
+        self.serial.read_all()
 
-    def setAceleration(motorch, acel):
+    def setAceleration(self, motorch, acel):
     #Acceleration value is in 0.1 * RPM per second.    
         command = '!AC ' + str(motorch) +' '+ str(acel)+'\r'
-        return sendData(command)
+        sendData(command)
 
-    def setEncoderCounters(motorch, conter):
+    def setEncoderCounters(self, motorch, conter):
         command = '!C '+str(motorch)+' '+str(conter)+'\r'
-        return sendData(command)
+        sendData(command)
         
-    def setDeceleration(motorch, deccel):
+    def setDeceleration(self, motorch, deccel):
     #Decceleration value is in 0.1 * RPM per second    
         command = '!DC '+str(motorch)+' '+str(deccel)+'\r'
-        return sendData(command)
+        sendData(command)
 
-    def goToSpeed(motorch, vel):
-        command = '!G '+str(motorch)+' '+str(vel)+'\r'
-        return sendData(command)
+    def goToSpeed(self, veld, vele):
+        command = '!G 1 '+str(veld)+'\r'
+        self.sendData(command)
+        command ='!G 2 '+str(vele)+'\r'
+        self.sendData(command)
 
-    def setMotorSpeed(motorch, speed):
+
+    def setMotorSpeed(self, motorch, speed):
         command = '!S '+ str(motorch)+' '+str(speed)+'\r'
-        return sendData(command)
+        sendData(command)
 
 
 class hdc2450:
@@ -152,10 +156,10 @@ class hdc2450:
     def __init__(self):
         SAFETYKEY = '321654987'
         baudRate  = 115200 
-        serialPort = '/dev/serial0'
-        uart = serial.Serial(self.serialPort, self.baudRate)
-        self.getValue = getValue(uart)
-        self.setCommand = setCommand(uart)
+        serialPort = '/dev/ttyS0'
+        self.uart = serial.Serial(serialPort, baudRate)
+        self.getValue = GetValue(self.uart)
+        self.setCommand = SetCommand(self.uart)
         
     def reset():
         command = '%RESET' + str(SAFETYKEY)

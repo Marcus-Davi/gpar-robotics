@@ -12,9 +12,7 @@ find_package(catkin REQUIRED COMPONENTS
   rospy
   serial
   std_msgs
-  tf2
-  tf2_ros
-  tf2_geometry_msgs
+  geometry_msgs
   message_generation
 )
 
