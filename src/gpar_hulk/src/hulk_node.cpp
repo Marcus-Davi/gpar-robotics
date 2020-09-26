@@ -2,50 +2,62 @@
 #include <sstream>
 #include "std_msgs/String.h"
 #include "serial/serial.h"
+#include "geometry_msgs/Twist.h"
+#include "driver_HDC2450.h"
 
 
-void serial_config(std::string porta, int rate);
+void Msg_serial(const geometry_msgs::Twist::ConstPtr& velocidade);
 
-ros::Subscriber sub1;
-serial::Serial* pserial;
-std::stringstream msg;
-std_msgs::String msg1;
+//Variáveis Globais
+const float PI = 3.141592654;
+float L = 0; // distância entre as rodas
+float R = 0; // raio das rodas
+float vd_rad;
+float ve_rad;
+int vd_rpm = 0; // velocidade da roda direita em rpm
+int ve_rpm = 0; // velocidade da roda esquerda em rpm
+std::string porta = "/dev/ttyACM1";
 
 
 int main(int argc, char **argv)
 {
+	Driver HULK;
+
 	ros::init(argc,argv,"hulk_node");
 	ros::NodeHandle n;
 
-	serial_config("/dev/ttyACM1",9600);
+	ros::Subscriber sub = n.subscribe("velocidade_hulk",1000,"Msg_serial");
 
-	ros::Rate freq(1);
+
+	//Ter um comando para verificar se a porta serial está aberta
+	
+	HULK.serial_verify();
+
+	ros::Rate freq(10);
 
 	while(ros::ok()){
-
-	ROS_INFO("Hello");
-
+	
+	HULK.set_speed(vd_rpm,ve_rpm);
+	
+	ros::spin();
 	freq.sleep();
 	}
 
 return 0;
 }
 
+void Msg_serial(const geometry_msgs::Twist::ConstPtr& velocidade){
+	float v = velocidade->linear.x;
+	float w = velocidade->angular.z;
 
+	vd_rad = (v+w*L);
+        ve_rad = (v-w*L);
 
-void serial_config(std::string porta, int rate){
-	std::string porta_serial = porta;
-	int baud_rate = rate;
-	
-	serial::Serial serial(porta_serial,baud_rate,serial::Timeout::simpleTimeout(1000));
-	
-	if(serial.isOpen())
- 	ROS_INFO("Porta Serial aberta!");
-	 else 
- 	ROS_INFO("Problema ao abrir a porta!");
-	pserial = &serial;
+	vd_rpm = (vd_rad*60/(2*PI*R));
+	ve_rpm = (ve_rad*60/(2*PI*R));
+
 }
-	
+
 	
 	
 	

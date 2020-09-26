@@ -32,7 +32,7 @@ class Hulk_move
 Hulk_move::Hulk_move(){
 	linear= 0.0;
 	angular = 0.0;
-	chatter_pub= n.advertise<geometry_msgs::Twist>("velocidade_hulk",1000);
+	pub= n.advertise<geometry_msgs::Twist>("velocidade_hulk",1000);
 }
 	
 int main (int argc, char **argv){
@@ -93,13 +93,14 @@ void Hulk_move::keyloop(){
 		angular=0;
 		
 	break;
+ 
 	}
 	geometry_msgs::Twist velocidade;
 
 	velocidade.linear.x= linear;
 	velocidade.angular.z = angular;
 
-	chatter_pub.publish(velocidade);
+	pub.publish(velocidade);
 }}
 
 
