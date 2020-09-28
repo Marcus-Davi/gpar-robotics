@@ -2,6 +2,7 @@
 #include <sstream>
 #include "string.h"
 #include "serial/serial.h"
+#include <unistd.h>
 
 
 class Driver
@@ -16,26 +17,27 @@ class Driver
 };
 
 void Driver::set_speed(int vd_rpm, int ve_rpm){	
+	
 	std::stringstream comando1,comando2;
 
 	// Verificar qual motor é de qual roda
 
-	comando1<<"!G 1 "<<vd_rpm<<" \r";
-	comando2<<"!G 2 "<<ve_rpm<<" \r";
-
+	comando1<<"!G 1 "<<vd_rpm<<"\r";
 	porta_serial->write(comando1.str());
-	porta_serial->write(comando2.str());		
+	
+	usleep(1000);
+
+	comando2<<"!G 2 "<<vd_rpm<<"\r";
+	porta_serial->write(comando2.str());	
 }
 
 void Driver::serial_verify(std::string porta){
-     serial::Serial serial(porta,115200,serial::Timeout::simpleTimeout(1000));
+    		
+  	porta_serial = new serial::Serial(porta,9600,serial::Timeout::simpleTimeout(1000));
 
-     if(serial.isOpen() == "true"){
-	std::cout<<"Porta serial conectada com sucesso!"<<std::endl;
-        porta_serial = &serial; 
-}
-    else
-	exit(-1);
+	if(porta_serial->isOpen())
+		std::cout<<"Porta serial conectada!"<<std::endl;
+
 }
     
 	

@@ -24,7 +24,7 @@ class Hulk_move
 
 	private:
 	ros::NodeHandle n;
-	ros::Publisher chatter_pub;
+	ros::Publisher pub;
 	double linear,angular;
 
 };
@@ -69,22 +69,22 @@ void Hulk_move::keyloop(){
 	switch(c){
 	case KEYCODE_RIGHT:
 		ROS_INFO("Move to right");
-		angular=-0.2;
+		angular=-1;
 		linear=0.0;
 	break;
 	case KEYCODE_LEFT:
 		ROS_INFO("Move to left");
-		angular=0.2;
+		angular=1;
 		linear=0.0;
 	break;
 	case KEYCODE_UP:
 		ROS_INFO("Move to up");
-		linear=0.2;
+		linear=1;
 		angular=0.0;
 	break;
 	case KEYCODE_DOWN:
 		ROS_INFO("Move to down");
-		linear=-0.2;
+		linear=-1;
 		angular=0.0;
 	break;
 	case KEYCODE_SPACE: 
