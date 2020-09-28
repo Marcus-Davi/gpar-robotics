@@ -136,9 +136,9 @@ include_directories(
 ## The recommended prefix ensures that target names across packages don't collide
 # add_executable(${PROJECT_NAME}_node src/gpar_hulk_node.cpp)
 
-add_executable(hulk_move_node src/hulk_move.cpp)
+add_executable(hulk_move src/hulk_move.cpp)
 add_executable(hulk_node src/hulk_node.cpp)
-add_executable(hulk_velocidade_node src/leitura_velocidade.cpp)
+add_executable(hulk_velocidade src/leitura_velocidade.cpp)
 add_executable(simple_control src/simple_control.cpp)
 
 ## Rename C++ executable without prefix
@@ -159,10 +159,10 @@ add_executable(simple_control src/simple_control.cpp)
 target_link_libraries(hulk_node
   ${catkin_LIBRARIES}
 )
-target_link_libraries(hulk_move_node
+target_link_libraries(hulk_move
   ${catkin_LIBRARIES}
 )
-target_link_libraries(hulk_velocidade_node
+target_link_libraries(hulk_velocidade
   ${catkin_LIBRARIES}
 )
 

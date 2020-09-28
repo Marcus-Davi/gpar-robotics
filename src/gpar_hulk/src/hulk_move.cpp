@@ -69,22 +69,22 @@ void Hulk_move::keyloop(){
 	switch(c){
 	case KEYCODE_RIGHT:
 		ROS_INFO("Move to right");
-		angular=-1;
+		angular=-0.2;
 		linear=0.0;
 	break;
 	case KEYCODE_LEFT:
 		ROS_INFO("Move to left");
-		angular=1;
+		angular=0.2;
 		linear=0.0;
 	break;
 	case KEYCODE_UP:
 		ROS_INFO("Move to up");
-		linear=1;
+		linear=0.2;
 		angular=0.0;
 	break;
 	case KEYCODE_DOWN:
 		ROS_INFO("Move to down");
-		linear=-1;
+		linear=-0.2;
 		angular=0.0;
 	break;
 	case KEYCODE_SPACE: 
