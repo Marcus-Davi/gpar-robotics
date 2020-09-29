@@ -17,7 +17,7 @@ float ve_rad;
 int vd_rpm = 0; // velocidade da roda direita em rpm
 int ve_rpm = 0; // velocidade da roda esquerda em rpm
 
-std::string porta = "/dev/ttyS0";
+std::string porta = "/dev/ttyACM0";
 
 Driver HULK;
 
@@ -38,9 +38,15 @@ int main(int argc, char **argv)
 	ros::Rate freq(20);
 
 	while(ros::ok()){
-	
-	
+	std::stringstream msg;
+
 	HULK.read_speed();
+
+	msg<<HULK.read_vd()<<","<<HULK.read_ve();
+	
+	velocidade.data = msg.str();
+
+	pub.publish(velocidade);
 	
 	ros::spinOnce();
 	
