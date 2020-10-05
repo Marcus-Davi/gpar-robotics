@@ -1,64 +1,79 @@
 #include "ros/ros.h"
-#include "geometry_msgs/Twist.h"
 #include <sstream>
 #include "std_msgs/String.h"
-#include "driver_HDC2450.h"
 #include "serial/serial.h"
-#include "string.h"
+#include "geometry_msgs/Twist.h"
+#include "driver_HDC2450.h"
 
 
-static const float d_hulk = 0;
-static const float raio_hulk = 0;
-static const float f = 0;
-static const float T = 0;
+void Velocidade_motor_rpm(const geometry_msgs::Twist::ConstPtr& velocidade);
 
-static double x=0,y=0,theta=0; //coordenadas
+//Variáveis Globais
+const float PI = 3.141592654;
+float L = 0.42; // distância entre as rodas
+float R = 0.055; // raio das rodas
+float vd_rad;
+float ve_rad;
+int vd_rpm = 0; // velocidade da roda direita em rpm
+int ve_rpm = 0; // velocidade da roda esquerda em rpm
 
+std::string porta = "/dev/ttyACM0";
 
-void movimento(const geometry_msgs::Twist::ConstPtr& move);
-void serial_config(std::string porta, int rate);
-
-ros::Subscriber sub1;
-serial::Serial* pserial;
-std::stringstream msg;
-std_msgs::String msg1;
+Driver HULK;
 
 int main(int argc, char **argv)
 {
+	std_msgs::String velocidade;
+	std::stringstream msg;
 	
 	ros::init(argc,argv,"hulk_node");
 	ros::NodeHandle n;
-	sub1 = n.subscribe("velocidade_hulk",1,movimento);
 
-	serial_config("/dev/ttyACM1",9600);
+	ros::Subscriber sub = n.subscribe("velocidade_hulk",1000,Velocidade_motor_rpm);
 
-	ros::spin();
+	ros::Publisher pub = n.advertise<std_msgs::String>("leitura_velocidade_hulk",1000);
+
+	HULK.serial_verify(porta);
+
+	ros::Rate freq(20);
+
+	while(ros::ok()){
+	std::stringstream msg;
+
+	HULK.read_speed();
+
+	msg<<HULK.read_vd()<<","<<HULK.read_ve();
+	
+	velocidade.data = msg.str();
+
+	pub.publish(velocidade);
+	
+	ros::spinOnce();
+	
+	freq.sleep();
+	}
 
 return 0;
 }
 
-void movimento(const geometry_msgs::Twist::ConstPtr& move){
-	//Por enquanto, vou deixar ele enviando a informação recebida para serial de forma bruta, sem trabalhar com os dados.
-	msg.str("");
-	msg<<"Velocidade Linear X: "<<move->linear.x<<"\nVelocidade Angular Z: "<<move->angular.z<<"\r";
-	pserial->write(msg.str());
-	msg1.data = msg.str();		
-	ROS_INFO("%s",msg1.data.c_str());
+//Realizando o cáculo das velocidades de cada motor em rpm
+void Velocidade_motor_rpm(const geometry_msgs::Twist::ConstPtr& velocidade){
+	float v = velocidade->linear.x;
+	float w = velocidade->angular.z;
+	
+	
+	vd_rad = (v+w*L);
+        ve_rad = (v-w*L);
+
+	vd_rpm = (vd_rad*60/(2*PI*R));
+	ve_rpm = (ve_rad*60/(2*PI*R));
+	
+	//std::cout<<"Velocidade roda direita = "<<vd_rpm<<"\nVelocidade roda esquerda = "<<ve_rpm<<std::endl;
+
+	HULK.set_speed(vd_rpm,ve_rpm);
+
 }
 
-void serial_config(std::string porta, int rate){
-	std::string porta_serial = porta;
-	int baud_rate = rate;
-	
-	serial::Serial serial(porta_serial,baud_rate,serial::Timeout::simpleTimeout(1000));
-	
-	if(serial.isOpen())
- 	ROS_INFO("Porta Serial aberta!");
-	 else 
- 	ROS_INFO("Problema ao abrir a porta!");
-	pserial = &serial;
-}
-	
 	
 	
 	

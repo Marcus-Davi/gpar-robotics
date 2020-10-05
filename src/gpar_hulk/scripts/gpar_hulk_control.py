@@ -7,22 +7,19 @@ from gpar_hulk_HDC2450 import *
 import math
 import time
 
-dist_hulk = None  #averiguar
-raio_hulk = None  #averiguar
-max_vel = 25000 #rpm
+dist_hulk = 0.4  #averiguar
+raio_hulk = 0.07  #averiguar
+max_vel = 300 #rpm
 max_vel_ang = 2 * max_vel / dist_hulk
+drive = hdc2450()
 
-def recieveData(vel):
-    """ 
-    A velocidade recebida é uma proporção da velocidade máxima de cada roda e deve
-    estar sempre entre -1 e 1.
-    """
+def receiveData(vel):
 
-    v = vel.linear.x * max_vel 
-    w = vel.angular.z * max_vel_ang
+    v = vel.linear.x
+    w = vel.angular.z
 
-    vd_rad = (v+w*dist_hulk)
-    ve_rad = (v-w*dist_hulk)
+    vd_lin = (v+w*0.5*dist_hulk) #linear
+    ve_lin = (v-w*0.5*dist_hulk) #linear
 
     '''
     formulas vistas no curso de robótica
@@ -31,38 +28,28 @@ def recieveData(vel):
     ve = (2*v - w*dist_hulk) / 2*raio_hulk
     
     '''
-    vd = int(vd_rad/max_vel *1000)
-    ve = int(ve_rad/max_vel *1000)
+    vd_rad = vd_lin/raio_hulk # m/s -> rad/s
+    ve_rad = ve_lin/raio_hulk
+   
 
-    vd_linear = (vd_rad*60/(2*math.pi*raio_hulk))
-    ve_linear = (ve_rad*60/(2*math.pi*raio_hulk))
+    vd_rpm = int(vd_rad*60/(2*math.pi)) # rad/s -> rpm
+    ve_rpm = int(ve_rad*60/(2*math.pi))
 
-    rospy.loginfo('\nVelocidade da roda direita'  + vd)
-    rospy.loginfo('\nVelocidade da roda esquerda' + ve)
+    rospy.loginfo('\nVelocidade da roda direita: '  + str(vd_rpm))
+    rospy.loginfo('\nVelocidade da roda esquerda: ' + str(ve_rpm))
 
-    drive.setCommand.goToSpeed(1, vd)
-    drive.setCommand.goToSpeed(2, ve)
-
-    time.sleep(0.5)
-
-    drive.setCommand.goToSpeed(1, 0)
-    drive.setCommand.goToSpeed(2, 0)
-
-
+    drive.setCommand.goToSpeed(vd_rpm, ve_rpm)
 
 def main():
 
-    drive = gpar_hulk_HDC2450.hdc2450()
-
     rospy.init_node('gpar_hulk_controll', anonymous=True)
-    rospy.Subscriber('/velocidade_hulk', String, recieveData())
+    rospy.Subscriber('/velocidade_hulk', Twist, receiveData)
     #rospy.Subscriber('/pioneer2dx/cmd_vel', String, recieveData())
-    
+    rospy.loginfo('\Esperando receber Twist !')
     rospy.spin()
 
-if __init__ == '__main__':
+if __name__ == '__main__':
     try:
         main()
-    except:
-        rospy.ROSInterruptException:
+    except rospy.ROSInterruptException:
             pass
