@@ -32,6 +32,9 @@
 #include <serial/serial.h>
 #include <sensor_msgs/NavSatFix.h>
 
+
+//TODO Add exception catch when disconnected
+
 sensor_msgs::NavSatFix ParseGPS(const std::string& msg);
 
 

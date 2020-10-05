@@ -1,0 +1,12 @@
+[Unit]
+Description=ROS EDP 
+
+[Service]
+Type=oneshot
+User=pi
+ExecStart=/home/pi/ROS/gpar-robot-ros/systemd/ros.sh start
+ExecStop=/home/pi/ROS/gpar-robot-ros/systemd/ros.sh stop
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
