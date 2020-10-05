@@ -6,6 +6,7 @@
 #include "driver_HDC2450.h"
 
 
+
 void Velocidade_motor_rpm(const geometry_msgs::Twist::ConstPtr& velocidade);
 
 //Variáveis Globais
@@ -17,36 +18,47 @@ float ve_rad;
 int vd_rpm = 0; // velocidade da roda direita em rpm
 int ve_rpm = 0; // velocidade da roda esquerda em rpm
 
-std::string porta = "/dev/ttyACM0";
+std::string porta = "/dev/ttyS0";
 
-Driver HULK;
+Driver HULK(porta);
 
 int main(int argc, char **argv)
 {
 	std_msgs::String velocidade;
+	std_msgs::String dados_hulk;
 	std::stringstream msg;
 	
 	ros::init(argc,argv,"hulk_node");
 	ros::NodeHandle n;
+	ros::NodeHandle n_private("~");
 
 	ros::Subscriber sub = n.subscribe("velocidade_hulk",1000,Velocidade_motor_rpm);
 
-	ros::Publisher pub = n.advertise<std_msgs::String>("leitura_velocidade_hulk",1000);
+	ros::Publisher pub = n_private.advertise<std_msgs::String>("leitura_velocidade",1000);
+	ros::Publisher pub2 = n_private.advertise<std_msgs::String>("dados_bateria",1000);
 
-	HULK.serial_verify(porta);
 
 	ros::Rate freq(20);
 
 	while(ros::ok()){
-	std::stringstream msg;
-
+	std::stringstream msg1,msg2;
+	
 	HULK.read_speed();
 
-	msg<<HULK.read_vd()<<","<<HULK.read_ve();
+	msg1<<HULK.read_vd()<<","<<HULK.read_ve();
 	
-	velocidade.data = msg.str();
+	velocidade.data = msg1.str();
 
 	pub.publish(velocidade);
+	
+	HULK.read_current();
+	HULK.read_temp();
+	HULK.read_volt();
+	msg2<<"A1:"<<HULK.read_current_d()<<" A2:"<<HULK.read_current_e()<<" T_MCU:"<<HULK.read_temp_MCU()<<" T_M1:"<<HULK.read_temp_motor1()<<" T_M2:"<<HULK.read_temp_motor2()<<" V_int:"<<HULK.read_volt_int()<<" V_bat:"<<HULK.read_volt_bat()<<" V_out:"<<HULK.read_volt_out();
+	
+	dados_hulk.data = msg2.str();
+	
+	pub2.publish(dados_hulk);
 	
 	ros::spinOnce();
 	
