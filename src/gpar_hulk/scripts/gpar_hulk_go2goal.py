@@ -118,7 +118,8 @@ if __name__ == "__main__":
         # Fazer lista
         path = list()
         theta = 0
-        path = paths.quadrado()
+        #path = paths.quadrado()
+        path = [(5,0)]
 
         #print(path)
         for points in path:
