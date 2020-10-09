@@ -16,6 +16,7 @@ int kfd = 0;
 char c; 
 struct termios cooked,raw;
 
+
 class Hulk_move
 {
 	public:
@@ -23,22 +24,16 @@ class Hulk_move
 	void keyloop();	
 
 	private:
-	ros::NodeHandle n;
 	ros::Publisher pub;
 	double linear,angular;
 
 };
-
-Hulk_move::Hulk_move(){
-	linear= 0.0;
-	angular = 0.0;
-	pub= n.advertise<geometry_msgs::Twist>("velocidade_hulk",1000);
-}
 	
-int main (int argc, char **argv){
-	ros::init(argc,argv,"hulk_move");	
+int main (int argc, char **argv){	
 
-	Hulk_move movimento;
+	ros::init(argc,argv,"hulk_move");
+	
+	Hulk_move movimento;    
 
 	movimento.keyloop();
 
@@ -102,6 +97,14 @@ void Hulk_move::keyloop(){
 
 	pub.publish(velocidade);
 }}
+
+Hulk_move::Hulk_move(){
+	linear= 0.0;
+	angular = 0.0;
+	ros::NodeHandle n("~");	
+
+	pub = n.advertise<geometry_msgs::Twist>("hulk_speed",1000);
+}
 
 
 

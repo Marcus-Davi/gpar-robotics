@@ -5,12 +5,11 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <cstdio>
-
+#include "sensor_msgs/BatteryState.h"
 
 struct Leitura_String{
 
     //Vão armazenar os dados das leituras
-
     int ve_rpm;
     int vd_rpm;
     
@@ -27,15 +26,15 @@ struct Leitura_String{
 
 };
 
-
-
 class Driver
 {
 	private:
                 Leitura_String dados;	
 		serial::Serial *porta_serial;
-	public:
-		Driver(std::string porta);
+	public:		
+		Driver();		
+		
+		void serial_open(std::string porta);
 
 		void set_speed(int vd_rpm, int ve_rpm);
 		void read_speed();
@@ -56,13 +55,17 @@ class Driver
 		float read_volt_int();
 		float read_volt_bat();
 		float read_volt_out();
-		
+
+		void read();
 		
 		~Driver();
 	
 };
-
-	Driver::Driver(std::string porta){
+	Driver::Driver(){
+	std::cout<<"---HULK PRINCIPAL NODE--"<<std::endl;
+	}
+	
+void Driver::serial_open(std::string porta){
      	porta_serial = new serial::Serial(porta,115200,serial::Timeout::simpleTimeout(1000));
 
 	if(porta_serial->isOpen())
@@ -127,11 +130,11 @@ void Driver::read_current(){
 }
 
 float Driver::read_current_d(){
-	return dados.current_d/10;
+	return dados.current_d;
 }
 
 float Driver::read_current_e(){
-	return dados.current_e/10;
+	return dados.current_e;
 }
 
 void Driver::read_temp(){
@@ -182,12 +185,18 @@ float Driver::read_volt_out(){
 	return dados.volt_output/1000;
 }
 	
+
+void Driver::read(){
+	read_speed();
+	read_current();
+	read_temp();
+	read_volt();
+}
+
 	Driver::~Driver(){
 		std::cout<<"\nFinalizando Programa"<<std::endl;
 		delete porta_serial;
 		}
-	
-	
 
 
 
