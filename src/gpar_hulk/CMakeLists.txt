@@ -12,7 +12,7 @@ find_package(catkin REQUIRED COMPONENTS
   rospy
   serial
   geometry_msgs
-  
+  sensor_msgs
 )
 
 ## System dependencies are found with CMake's conventions
@@ -70,10 +70,10 @@ find_package(catkin REQUIRED COMPONENTS
 # )
 
 ## Generate added messages and services with any dependencies listed here
-# generate_messages(
+#generate_messages(
 #   DEPENDENCIES
-#   std_msgs  # Or other packages containing msgs
-# )
+#   std_msgs # Or other packages containing msgs
+#)
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
@@ -127,6 +127,11 @@ include_directories(
 #   src/${PROJECT_NAME}/gpar_hulk.cpp
 # )
 
+add_library(adxl345
+	src/adxl345.cpp
+)
+
+
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
 ## either from message generation or dynamic reconfigure
@@ -141,6 +146,8 @@ add_executable(hulk_move src/hulk_move.cpp)
 add_executable(hulk_node src/hulk_node.cpp)
 add_executable(hulk_velocidade src/leitura_velocidade.cpp)
 add_executable(simple_control src/simple_control.cpp)
+add_executable(adxl_send src/adxl_send.cpp)
+
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -168,6 +175,11 @@ target_link_libraries(hulk_velocidade
 )
 
 target_link_libraries(simple_control ${catkin_LIBRARIES})
+
+target_link_libraries(adxl_send  ${catkin_LIBRARIES}
+			wiringPi
+			adxl345
+			)
 
 
 #############
