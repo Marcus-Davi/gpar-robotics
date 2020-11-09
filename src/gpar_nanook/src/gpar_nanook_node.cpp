@@ -134,8 +134,11 @@ ROS_INFO("odom tf will not be published");
 
 
 
+  ROS_WARN*("Abrindo...");
 
   serial::Serial mcu_serial(porta_serial,115200,serial::Timeout::simpleTimeout(1000));
+
+  
 if(mcu_serial.isOpen()){
  ROS_INFO("Porta Serial aberta!");
 } else {
