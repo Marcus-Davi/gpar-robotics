@@ -130,7 +130,9 @@ include_directories(
 add_library(adxl345
 	src/adxl345.cpp
 )
-
+add_library(mpu6050
+	src/mpu6050.cpp
+)
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
@@ -147,7 +149,7 @@ add_executable(hulk_node src/hulk_node.cpp)
 add_executable(hulk_velocidade src/leitura_velocidade.cpp)
 add_executable(simple_control src/simple_control.cpp)
 add_executable(adxl_send src/adxl_send.cpp)
-
+add_executable(mpu_send src/mpu_send.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -180,7 +182,10 @@ target_link_libraries(adxl_send  ${catkin_LIBRARIES}
 			wiringPi
 			adxl345
 			)
-
+target_link_libraries(mpu_send ${catkin_LIBRARIES}
+			wiringPi
+			mpu6050
+			)
 
 #############
 ## Install ##
