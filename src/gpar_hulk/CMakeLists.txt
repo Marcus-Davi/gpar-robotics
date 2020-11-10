@@ -178,8 +178,12 @@ target_link_libraries(hulk_velocidade
 
 target_link_libraries(simple_control ${catkin_LIBRARIES})
 
-target_link_libraries(adxl_send  ${catkin_LIBRARIES}
+target_link_libraries(adxl345
 			wiringPi
+			)
+
+target_link_libraries(adxl_send  ${catkin_LIBRARIES}
+		# wiringPi
 			adxl345
 			)
 target_link_libraries(mpu_send ${catkin_LIBRARIES}

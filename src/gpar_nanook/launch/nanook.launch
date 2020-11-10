@@ -1,14 +1,23 @@
 <?xml version="1.0"?>
 <launch>
-	<node pkg="gpar_nanook" type="gpar_nanook_node" name="gpar_nanook_node" output="screen" >
-	<!-- node parameters -->
-	<param name="serial_port" type="string" value="/dev/ttyACM0"/>
-	<param name="publish_odom" type="bool" value="true" />
-	</node>
+		<node pkg="gpar_nanook" type="gpar_nanook_node" name="gpar_nanook_node" output="screen" respawn="true" >
+				<!-- node parameters -->
+				<param name="serial_port" type="string" value="/dev/ttyACM0"/>
+				<param name="publish_odom" type="bool" value="true" />
+		</node>
 
 
+		<!-- camera -->
+
+		<node pkg="usb_cam" type="usb_cam_node" name="camera" >
+				<param name="pixel_format" value="yuyv" />
+		</node>
+
+
+		<!--
 	<node pkg="gpar_nanook" type="gpar_nanook_gps" name="gpar_nanook_gps" >
 			<param name="serial_port" type="string" value="/dev/ttyUSB0" />
 	</node>
+	-->
 
 </launch>
