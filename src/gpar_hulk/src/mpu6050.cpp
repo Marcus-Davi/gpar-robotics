@@ -183,6 +183,7 @@ void mpu6050::ReadAll(){
     uint16_t t = I2CRead16(MPU_ADD, MPU_TEM_DATA);
     Imu.Temp = (t << 8) | t&0x00FF;
     Imu.Temp = Imu.Temp/340*   +36.53;
+    
 }
 
 

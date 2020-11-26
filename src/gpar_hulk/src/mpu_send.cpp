@@ -64,7 +64,7 @@ int main(int argc, char **argv)
         acc.angular_velocity.x = (float)mpu.Imu.Gyr.X;
         acc.angular_velocity.y = (float)mpu.Imu.Gyr.Y;
         acc.angular_velocity.z = (float)mpu.Imu.Gyr.Z;
-
+        /*
         if(acc.angular_velocity.x > 32768){
             acc.angular_velocity.x = acc.angular_velocity.x - 65536;
         }
@@ -74,7 +74,7 @@ int main(int argc, char **argv)
         if(acc.angular_velocity.z > 32768){
             acc.angular_velocity.z = acc.angular_velocity.z - 65536;
         }
-
+        */
         acc.angular_velocity.x = (float)acc.angular_velocity.x/65.5 ;
         acc.angular_velocity.y = (float)acc.angular_velocity.y/65.5 ;
         acc.angular_velocity.z = (float)acc.angular_velocity.z/65.5 ;
