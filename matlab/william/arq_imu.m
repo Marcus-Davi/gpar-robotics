@@ -5,6 +5,8 @@ function [accx accy accz gyrox gyroy gyroz] = arq_imu(escolha);
     %escolha = 1 --> escrita parado
     %escolha = 0 --> leitura
     
+    addpath('./movimentos');
+    
     if(escolha == 1)
         [accx ,accy , accz , gyrox , gyroy , gyroz] = imu(1000,0);
     elseif (escolha == 2)
