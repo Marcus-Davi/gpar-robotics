@@ -31,7 +31,7 @@ classdef quaternionEKF < handle
                      
             obj.P = J'* obj.P *J' + obj.Q;
 
-            obj.x = quat_normalize(obj.x(1),obj.x(2),obj.x(3),obj.x(4));
+%             obj.x = quat_normalize(obj.x(1),obj.x(2),obj.x(3),obj.x(4));
             x_pred = obj.x;
 
         end
@@ -48,20 +48,20 @@ classdef quaternionEKF < handle
                              obj.x(2)  obj.x(1)  obj.x(4) obj.x(3);
                              obj.x(1) -obj.x(2) -obj.x(3) obj.x(4)];
             
-            e = y - y_hat;
+            e = y - y_hat
             l = obj.P* H';
             alpha = H * obj.P * H' + obj.R;
-            K = l/alpha
+            K = l/alpha;
             obj.x = obj.x + K*e;
-            obj.P = obj.P - K*l';
+            obj.P = obj.P - K*H*obj.P;
             
-            obj.x = quat_normalize(obj.x(1),obj.x(2),obj.x(3),obj.x(4));
+%             obj.x = quat_normalize(obj.x(1),obj.x(2),obj.x(3),obj.x(4));
             x = obj.x;
         end
     end
 end
 
-function qnorm = quat_normalize(q1, q2, q3, q4)
+function qnorm = quat_normalize(q1, q2, q3, q4) %#ok<DEFNU>
     mod = sqrt(q1*q1 + q2*q2 + q3*q3 *q4*q4);
     if mod == 0
         qnorm = [0;0;0;0];
