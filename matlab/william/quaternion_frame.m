@@ -20,9 +20,9 @@ tam = length(gyrox);
        
 [accx_0 accy_0 accz_0 gyrox_0 gyroy_0 gyroz_0] = imu_calibration();
 
-accx = accx + accx_0;
-accy = accy + accy_0;
-accz = accz + accz_0;
+accx = accx;% + accx_0;
+accy = accy;%+ accy_0;
+accz = accz;%+ accz_0;
 
 gyrox = gyrox + gyrox_0;
 gyroy = gyroy + gyroy_0;
@@ -37,7 +37,7 @@ F = eye(4);
 P = eye(4);
 
 Q = [0.001 -0.0003 0.0003 0.0003;-0.0003 0.0001 -0.0001 -0.0001;0.0003 -0.0001 0.0001 0.0001;0.0003 -0.0001 0.0001 0.0001];
-R = [0.1 0 0 0;0 0.7511 0 0;0 0 0.7759 0;0 0 0 0.8648];
+R = 1*[10 0 0 0;0 0.7511 0 0;0 0 0.7759 0;0 0 0 0.8648];
 
 
 %% Kalman Filter
@@ -119,8 +119,10 @@ for i = 1 : tam
     tform.Transform.Rotation.X = b;
     tform.Transform.Rotation.Y = c;
     tform.Transform.Rotation.Z = d;
-    tform.Header.Stamp = rostime('now')
-    sendTransform(tftree,tform)
+    tform.Header.Stamp = rostime('now');
+    sendTransform(tftree,tform);
     pause(dt)
+    i
 end
+break
 end
