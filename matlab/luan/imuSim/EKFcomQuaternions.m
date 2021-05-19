@@ -72,8 +72,8 @@ while(1)
 
      %% Filtro de Kalman
      
-     vec_gyr_bias = [ 0 gyr_bias gyr_bias gyr_bias];
-     vec_gyr_var  = [ 0 gyr_var  gyr_var  gyr_var];
+     vec_gyr_bias = [ gyr_bias gyr_bias gyr_bias gyr_bias];
+     vec_gyr_var  = [ gyr_var  gyr_var  gyr_var  gyr_var];
      
      ekf = quaternionEKF(dt, vec_gyr_bias, vec_gyr_var);
      for i=1:samples
@@ -90,5 +90,6 @@ while(1)
         pause(dt)
         
      end
+     disp(['Final'])
 end
           

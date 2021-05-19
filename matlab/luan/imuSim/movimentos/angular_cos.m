@@ -8,8 +8,8 @@ function [acc_linear, vel_angular, rotvec] = angular_cos(f, samples, w)
 
 t = (0:(1/f):(samples -1)/f)';
 
-pitch = pi/2 * cos(w*t);
-w_pitch = -pi*w/2 * sin(w*t); 
+pitch = pi/2 * cos(w*t+pi/2);
+w_pitch = -pi*w/2 * sin(w*t+pi/2); 
 
 rotvec = [zeros(samples,1), pitch, zeros(samples,1)];
 

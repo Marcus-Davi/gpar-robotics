@@ -1,7 +1,7 @@
 classdef quaternionEKF < handle
 
     properties
-        x = [0;0;0;0];
+        x = [1;0;0;0];
         dt = 0;
         g = 9.8165;
         P = eye(4);
@@ -31,7 +31,7 @@ classdef quaternionEKF < handle
                      
             obj.P = J'* obj.P *J' + obj.Q;
 
-            obj.x = quat_normalize(obj.x(1),obj.x(2),obj.x(3),obj.x(4));
+%             obj.x = quat_normalize(obj.x(1),obj.x(2),obj.x(3),obj.x(4));
             x_pred = obj.x;
 
         end
@@ -40,22 +40,22 @@ classdef quaternionEKF < handle
             y = [0 ; g_measured];
             y_hat = obj.g * [0;
                              2*(obj.x(4)*obj.x(2)-obj.x(3)*obj.x(1));
-                             2*(obj.x(4)*obj.x(3)+ obj.x(2)*obj.x(1));
-                             obj.x(4)*obj.x(4) -obj.x(3)*obj.x(3) -obj.x(2)*obj.(2)  + obj.x(1)*obj.x(1)];
+                             2*(obj.x(4)*obj.x(3)+obj.x(2)*obj.x(1));
+                             obj.x(4)*obj.x(4)-obj.x(3)*obj.x(3)-obj.x(2)*obj.x(2)+obj.x(1)*obj.x(1)];
             
              H = 2 *obj.g* [     0         0         0        0 ;
                             -obj.x(3)  obj.x(4) -obj.x(1) obj.x(2);
                              obj.x(2)  obj.x(1)  obj.x(4) obj.x(3);
                              obj.x(1) -obj.x(2) -obj.x(3) obj.x(4)];
             
-            e = y - y_hat;
+            e = y  y_hat;
             l = obj.P* H';
-            alpha = H * f * H' + obj.R;
-            K = f/alpha;
+            alpha = H * obj.P * H' + obj.R;
+            K = l/alpha;
             obj.x = obj.x + K*e;
-            obj.P = obj.P - K*l';
+            obj.P = obj.P - K*H*obj.P;
             
-            obj.x = quat_normalize(obj.x);
+%             obj.x = quat_normalize(obj.x(1),obj.x(2),obj.x(3),obj.x(4));
             x = obj.x;
         end
     end
@@ -63,5 +63,9 @@ end
 
 function qnorm = quat_normalize(q1, q2, q3, q4)
     mod = sqrt(q1*q1 + q2*q2 + q3*q3 *q4*q4);
-    qnorm = [q1;q2;q3;q4] / mod;
+    if mod == 0
+        qnorm = [0;0;0;0];
+    else
+        qnorm = [q1;q2;q3;q4] / mod;
+    end
 end
