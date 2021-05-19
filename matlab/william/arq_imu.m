@@ -16,12 +16,13 @@ function [accx accy accz gyrox gyroy gyroz] = arq_imu(escolha);
     if(escolha == 1 || escolha == 2)
     matriz_mpu = [gyrox gyroy gyroz accx accy accz];
     nome = input('Digite o nome do arquivo: ','s');
-    
+   
     nome = strcat(nome,'.csv');
     
     csvwrite(nome,matriz_mpu)
     else
-       nome = input('Digite o nome do arquivo que deseja ler: ','s');
+       %nome = input('Digite o nome do arquivo que deseja ler: ','s');
+       nome = "parado_imu";
        nome = strcat(nome,'.csv');
         
        data = csvread(nome);

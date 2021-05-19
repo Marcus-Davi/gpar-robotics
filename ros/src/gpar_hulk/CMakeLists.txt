@@ -176,9 +176,9 @@ target_link_libraries(hulk_velocidade
   ${catkin_LIBRARIES}
 )
 
-add_executable(mpu_teste src/mpu_teste.cpp)
+#add_executable(mpu_teste src/mpu_teste.cpp)
 
-target_link_libraries(mpu_teste ${catkin_LIBRARIES} -lwiringPi)
+#target_link_libraries(mpu_teste ${catkin_LIBRARIES} -lwiringPi)
 
 add_executable(mpu_node src/mpu_node.cpp)
 

@@ -17,7 +17,7 @@ bias_gz = sum(gyroz(1:N))/N;
 
 accx_0 = 0 - bias_ax;
 accy_0 = 0 - bias_ay;
-accz_0 = 9.8065 - bias_az;
+accz_0 = 9.8 - bias_az;
 
 gyrox_0 = 0 - bias_gx;
 gyroy_0 = 0 - bias_gy;
