@@ -54,7 +54,7 @@ tform.Transform.Rotation.Z = 0;
 
  ekf = quaternionEKF(dt, vec_gyr_var, vec_acc_var);
  for i=1:samples
-     ekf.predict(gyr_calibrado(i,:));
+     ekf.predict(gyr_calibrado(i,:)');
 
      q = ekf.update(acc_calibrado(i,:)');
 

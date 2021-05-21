@@ -19,12 +19,9 @@ classdef quaternionEKF < handle
         end
         
         function x_pred = predict(obj,w )
+            w = [0;w];
             
-            
-            obj.x = [obj.x(1) + obj.dt/2*(-obj.x(2)*w(1) -obj.x(3)*w(2) -obj.x(4)*w(3));
-                     obj.x(2) + obj.dt/2*( obj.x(1)*w(1) -obj.x(4)*w(2) +obj.x(3)*w(3));
-                     obj.x(3) + obj.dt/2*( obj.x(4)*w(1) +obj.x(1)*w(2) -obj.x(2)*w(3));
-                     obj.x(4) + obj.dt/2*(-obj.x(3)*w(1) +obj.x(2)*w(2) -obj.x(1)*w(3))];
+            obj.x = obj.x + obj.dt/2*quatmultiply(obj.x',w')';
             
            J = [2/obj.dt  -w(1)    -w(2)     -w(3);
                   w(1)   2/obj.dt   w(3)     -w(2);
@@ -39,18 +36,17 @@ classdef quaternionEKF < handle
         
         function x = update(obj, g_measured)
             y = [0 ; g_measured];
-            y_hat = obj.g * [0;
-                             2*(obj.x(4)*obj.x(2)-obj.x(3)*obj.x(1));
-                             2*(obj.x(4)*obj.x(3)+obj.x(2)*obj.x(1));
-                             obj.x(4)*obj.x(4)-obj.x(3)*obj.x(3)-obj.x(2)*obj.x(2)+obj.x(1)*obj.x(1)];
+            
+            y_hat = quatrotate(obj.x', [0;0;obj.g]')';
+            y_hat = [0;y_hat];
             
              H = 2 *obj.g* [     0         0         0        0 ;
                             -obj.x(3)  obj.x(4) -obj.x(1) obj.x(2);
                              obj.x(2)  obj.x(1)  obj.x(4) obj.x(3);
                              obj.x(1) -obj.x(2) -obj.x(3) obj.x(4)];
             
-            e = y - y_hat
-            K = obj.P* H'*inv(H * obj.P * H' + obj.R);
+            e = y - y_hat; %#ok<NOPRT>
+            K = obj.P* H'*inv(H * obj.P * H' + obj.R); %#ok<MINV>
             obj.x = obj.x + K*e;
             obj.P = obj.P - K*H*obj.P;
             

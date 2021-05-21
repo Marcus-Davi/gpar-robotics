@@ -47,14 +47,13 @@ tform.Transform.Rotation.Z = 0;
 
  %% Filtro de Kalman
 
-  vec_gyr_bias = 1 * [ 1 var(gyr_calib)];
-  vec_gyr_var  = 10* [ 1 var(acc_calib)];
-  vec_gyr_bias 
+  vec_gyr_var = 1 * [ 1 var(gyr_calib)];
+  vec_acc_var  = 10* [ 1 var(acc_calib)];
+  vec_gyr_var(4) = 0.001;
 
-
- ekf = quaternionEKF(dt, vec_gyr_bias, vec_gyr_var);
+ ekf = quaternionEKF(dt, vec_gyr_var, vec_acc_var);
  for i=1:samples
-     ekf.predict(gyr_calibrado(i,:));
+     ekf.predict(gyr_calibrado(i,:)');
 
      q = ekf.update(acc_calibrado(i,:)');
 
