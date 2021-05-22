@@ -51,7 +51,6 @@ tform.Transform.Rotation.Z = 0;
   vec_acc_var  = 10* [ 1 var(acc_calib)];
   vec_gyr_var(4) = 0.001;
 
-
  ekf = quaternionEKF(dt, vec_gyr_var, vec_acc_var);
  for i=1:samples
      ekf.predict(gyr_calibrado(i,:)');
