@@ -20,30 +20,38 @@ calib_data = csvread(parado_filename);
 acc = [data(:,1) data(:,2) data(:,3)];
 gyr = [data(:,4) data(:,5) data(:,6)];
 
+%dados obtidos com sensor inerte
 acc_calib = [calib_data(:,1) calib_data(:,2) calib_data(:,3)];
 gyr_calib = [calib_data(:,4) calib_data(:,5) calib_data(:,6)];
 
-gyr_calibrado = gyr;% - gyr_calib; % não calibra pra vermos o efeito da fusão
+acc_caluib_mean = mean(acc_calib);
+gyr_calib_mean = mean(gyr_calib); %bias
+
+% gyr_calib_mean(3) = -0.05; % bias artificia
+gyr_calib_mean(2) = -0.05; % bias artificial
+% gyr_calib_mean(1) = -0.05; % bias artificial
+gyr_calibrado = gyr - gyr_calib_mean; %remove bias
 acc_calibrado = acc;
 
 
 %% Modelo
-freq = 100;
+freq = 400; % precisa ser o mesmo do gera_dados.m
 Ts = 1/freq;
-g = [0 0 9.5]'; % gravidade
+g = [0 0 9.78]'; % gravidade "errada" pra reduzir instabilidade
 samples = length(data);
 
 %% Kalman
-
-% Parametros
+% Parametros Kalman
 Qn = 1*diag([1 var(gyr_calib)]);
-Qn(4,4) = 0.001; % variancia no eixo z menor para "confiarmos" mais na medida do gyro
+% Qn(4,4) = 0.00001; % variancia no eixo z menor para "confiarmos" mais na medida do gyro
 
-Rn = 10*diag([1 var(acc_calib)]);
+Rn = 1*diag([1 var(acc_calib)]);
+Rn(4,4) = 1;
 
 Pk = 0.1*eye(4); % erro inicial é proximo de zero
-x = [1 0 0 0]'; %fusion
+Pk(4,4) = 0; %erro no eixo z é 0 (tende ao gyro)
 
+x = [1 0 0 0]'; %fusion
 x_pure_gyro = [1 0 0 0]'; %gyro only
 %% ROS
 rosshutdown % desligar antes
@@ -88,9 +96,7 @@ X_GYRO = zeros(samples,4);
 for i = 1 : samples
     w_measure = [0 gyr_calibrado(i,1) gyr_calibrado(i,2) gyr_calibrado(i,3)]'; %quaterniana
     a_measure = [0 acc_calibrado(i,1) acc_calibrado(i,2) acc_calibrado(i,3)]';
-    
-    
-    
+   
     % predict
     x = (x' + (Ts/2)*quatmultiply(x', w_measure'))';%Assume calibrado (bias constante) %-Ts/2 *quatmultiply(q_k,[0 bias]);
     
@@ -125,9 +131,13 @@ for i = 1 : samples
     X(i,:) = x; 
     X_GYRO(i,:) = x_pure_gyro;
 end
+euler = quat2eul(X,'XYZ');
+
+plot(euler)
+legend('roll','pitch','yaw')
 
 
-
+% return
 %% Visualization
 for i = 1 : samples
     x = X(i,:);
@@ -153,6 +163,7 @@ for i = 1 : samples
     sendTransform(tftree,tform2);
     
     pause(Ts)
+    i
 
 end
 

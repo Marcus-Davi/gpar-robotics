@@ -3,7 +3,7 @@ function [acc,ang,orientation] = ikinematics(p0,p1,Samples,Ts,alpha)
 % espaço. Suavizado por alpha.
 
 
-offset = 100; % sem movimento
+offset = round(0.2*Samples);
 % Linear
 x = linspace(p0(1),p1(1),Samples-2*offset)';
 y = linspace(p0(2),p1(2),Samples-2*offset)';
