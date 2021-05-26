@@ -1,5 +1,20 @@
-% quaternion frame
+%Extended Kalman Filter (Quaternion with bias)
+%{
+State Vector
+| q  |
+| wb |
+Onde
+q = q0 q1 q2 q3
+wb = 0 wbx wby wbz
 
+x --> 8x1
+f --> 8x1
+F --> 8x8
+
+h --> 4x1
+x --> 8x1
+H --> 4x8
+%}
 %% Leitura
 movimento_filename = '../../datasets/simulation/movimento.csv';
 parado_filename = '../../datasets/simulation/parado.csv';
@@ -29,56 +44,72 @@ accx = accx - mean_calib_acc(1,1);
 accy = accy - mean_calib_acc(1,2);
 accz = accz - (9.8 - mean_calib_acc(1,3));
 
-gyrox = gyrox - mean_calib_gyro(1,1);
-gyroy = gyroy - mean_calib_gyro(1,2);
-gyroz = gyroz - mean_calib_gyro(1,3);
+gyrox = gyrox;% - mean_calib_gyro(1,1);
+gyroy = gyroy;% - mean_calib_gyro(1,2);
+gyroz = gyroz;% - mean_calib_gyro(1,3);
+
+%wbx = mean_calib_gyro(1,1);
+%wby = mean_calib_gyro(1,2);
+%wbz = mean_calib_gyro(1,3);
+
 
 %% Preparação
-x = [1 0 0 0]'; %Nosso quatérnio
+x = [1 0 0 0 0 0 0 0]; 
 dt = 1/100;
-g = 9.78;
+g = 9.8;
 
-F = eye(4);
-P = 0.1*eye(4);
-P(4,4) = 0;
-
+F = eye(8);
+P = eye(8);
 
 gyro = [gyrox gyroy gyroz];
 a = [accx accy accz];
 
-Q = diag([1 var(calib_gyro)]);
+Q = diag([1 var(calib_gyro) 1 0.01*dt 0.01*dt 0.01*dt]);
 Q(4,4) = 0.00001;
 R = diag([1 var(calib_acc)]);
 R(4,4) = 1;
 
 %% Kalman Filter
-for i=1:tam
+for i=1:1500
    q0 = x(1);
    q1 = x(2);
    q2 = x(3);
-   q3 = x(4);  
+   q3 = x(4); 
+  wbx = x(6);
+  wby = x(7);
+  wbz = x(8);
+  
+  q = [q0;q1;q2;q3];
+  wb = [0;0;0;0];
+  
+  
+  wx = gyrox(i);
+  wy = gyroy(i);
+  wz = gyroz(i);
    
-   wx = gyrox(i);
-   wy = gyroy(i);
-   wz = gyroz(i);
-   
+
+% Prediction
+F = (dt/2)*[2/dt wbx-wx wby-wy wbz-wz 0   q1   q2  q3
+            wx-wbx 2/dt wz-wbz wby-wy 0   q0  -q3  q2
+            wy-wby wbz-wz 2/dt wx-wbx 0   q3   q0 -q1
+            wz-wbz wy-wby wbx-wx 2/dt 0  -q2   q1  q0
+              0      0      0     0   0   0    0    0
+              0      0      0     0   0  2/dt  0    0
+              0      0      0     0   0   0  2/dt   0
+              0      0      0     0   0   0    0  2/dt];
+          
+X = [-q1*(wx-wbx)-q2*(wy-wby)-q3*(wz-wbz) 
+      q0*(wx-wbx)-q3*(wy-wby)+q2*(wz-wbz)
+      q3*(wx-wbx)+q0*(wy-wby)-q1*(wz-wbz)
+     -q2*(wx-wbx)+q1*(wy-wby)+q0*(wz-wbz)];
+ 
+x_ = [q + (dt/2)*X
+        wb      ];
     
-  % Prediction
-   X = [-q1*wx-q2*wy-q3*wz 
-         q0*wx-q3*wy+q2*wz
-         q3*wx+q0*wy-q1*wz
-        -q2*wx+q1*wy+q0*wz];
-   
-    F = (dt/2)*[2/dt -wx -wy -wz
-                 wx  2/dt wz -wy
-                 wy  -wz 2/dt wx
-                 wz   wy -wx 2/dt];
-    
-   x_ = x + (dt/2)*X;
-   P_ = F*P*F' + Q;
-   
-  %Measurement
-   q0 = x_(1);
+P_ = F*P*F' + Q;
+
+% Measurement
+q0 = x_(1);
    q1 = x_(2);
    q2 = x_(3);
    q3 = x_(4);
@@ -90,18 +121,19 @@ for i=1:tam
          
     y = [0 accx(i) accy(i) accz(i)]';
     z = y - y_;
-  %Update
-    H = [ 0   0   0  0
-         -q2  q3 -q0 q1   
-          q1  q0  q3 q2
-          q0 -q1 -q2 q3]*2*g;
+% Update
+H = g*[ 0     0     0     0   0 0 0 0
+      -2*q2  2*q3 -2*q0  2*q1 0 0 0 0
+       2*q1  2*q0  2*q3  2*q2 0 0 0 0
+       2*q0 -2*q1 -2*q2  2*q3 0 0 0 0];
+   
+K = P_*H'*(H*P_*H'+R)^-1;
+P = (eye(8)-K*H)*P_';
+x = x_ + K*z;
+
+%Output
+    output(i,1) = normalize(quaternion(x(1),x(2),x(3),x(4)));
     
-    K = P_*H'*(H*P_*H'+R)^-1;
-    P = (eye(4)-K*H)*P_;
-    
-    x = x_ + K*z;
-  %Output
-  output(i,1) = normalize(quaternion(x(1),x(2),x(3),x(4)));
 end
 
 %% ROS
@@ -122,7 +154,7 @@ tform.Transform.Rotation.Y = 0;
 tform.Transform.Rotation.Z = 0;
 
 while(1)  
-for i = 1 : tam
+for i = 1 : 1500
 
     [a b c d] = parts(output(i));
     
