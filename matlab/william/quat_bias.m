@@ -44,13 +44,13 @@ accx = accx - mean_calib_acc(1,1);
 accy = accy - mean_calib_acc(1,2);
 accz = accz - (9.8 - mean_calib_acc(1,3));
 
-gyrox = gyrox;% - mean_calib_gyro(1,1);
-gyroy = gyroy;% - mean_calib_gyro(1,2);
-gyroz = gyroz;% - mean_calib_gyro(1,3);
+gyrox = gyrox - mean_calib_gyro(1,1);
+gyroy = gyroy - mean_calib_gyro(1,2);
+gyroz = gyroz - mean_calib_gyro(1,3);
 
-%wbx = mean_calib_gyro(1,1);
-%wby = mean_calib_gyro(1,2);
-%wbz = mean_calib_gyro(1,3);
+wbx = mean_calib_gyro(1,1);
+wby = mean_calib_gyro(1,2);
+wbz = mean_calib_gyro(1,3);
 
 
 %% Preparação
@@ -59,18 +59,19 @@ dt = 1/100;
 g = 9.8;
 
 F = eye(8);
-P = eye(8);
+P = 0.1*eye(8);
+P(4,4) = 0;
 
 gyro = [gyrox gyroy gyroz];
 a = [accx accy accz];
 
-Q = diag([1 var(calib_gyro) 1 0.01*dt 0.01*dt 0.01*dt]);
+Q = diag([1 var(calib_gyro) 1 wbx wby wbz]);
 Q(4,4) = 0.00001;
 R = diag([1 var(calib_acc)]);
 R(4,4) = 1;
 
 %% Kalman Filter
-for i=1:1500
+for i=1:tam
    q0 = x(1);
    q1 = x(2);
    q2 = x(3);
@@ -80,7 +81,7 @@ for i=1:1500
   wbz = x(8);
   
   q = [q0;q1;q2;q3];
-  wb = [0;0;0;0];
+  wb = [0;wbx;wby;wbz];
   
   
   wx = gyrox(i);
@@ -89,10 +90,10 @@ for i=1:1500
    
 
 % Prediction
-F = (dt/2)*[2/dt wbx-wx wby-wy wbz-wz 0   q1   q2  q3
-            wx-wbx 2/dt wz-wbz wby-wy 0   q0  -q3  q2
-            wy-wby wbz-wz 2/dt wx-wbx 0   q3   q0 -q1
-            wz-wbz wy-wby wbx-wx 2/dt 0  -q2   q1  q0
+F = (dt/2)*[2/dt wbx-wx wby-wy wbz-wz 0  q1   q2   q3
+            wx-wbx 2/dt wz-wbz wby-wy 0 -q0   q3  -q2
+            wy-wby wbz-wz 2/dt wx-wbx 0 -q3  -q0   q1
+            wz-wbz wy-wby wbx-wx 2/dt 0  q2  -q1  -q0
               0      0      0     0   0   0    0    0
               0      0      0     0   0  2/dt  0    0
               0      0      0     0   0   0  2/dt   0
@@ -133,10 +134,12 @@ x = x_ + K*z;
 
 %Output
     output(i,1) = normalize(quaternion(x(1),x(2),x(3),x(4)));
+    bias(i,:) = [x(6) x(7) x(8)];
     
 end
 
 %% ROS
+%%{
 rosshutdown % desligar antes
 rosinit % roscore
 
@@ -154,7 +157,7 @@ tform.Transform.Rotation.Y = 0;
 tform.Transform.Rotation.Z = 0;
 
 while(1)  
-for i = 1 : 1500
+for i = 1 : tam
 
     [a b c d] = parts(output(i));
     
@@ -166,5 +169,5 @@ for i = 1 : 1500
     sendTransform(tftree,tform);
     pause(dt)
 end
-
 end
+%}
