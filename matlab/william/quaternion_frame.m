@@ -1,44 +1,55 @@
 % quaternion frame
 
 %% Leitura
-addpath('./movimentos');
+movimento_filename = '../../datasets/simulation/movimento.csv';
+parado_filename = '../../datasets/simulation/parado.csv';
 
-movimento = "pitch_imu.csv"; % Colocamos o nome do arquivo que queremos ler
+data = csvread(movimento_filename);
+calib = csvread(parado_filename);
 
-data = csvread(movimento);
-       accx = data(:,4);
-       accy = data(:,5);
-       accz = data(:,6);
+       accx = data(:,1);
+       accy = data(:,2);
+       accz = data(:,3);
 
-       gyrox = data(:,1);
-       gyroy = data(:,2);
-       gyroz = data(:,3); 
+       gyrox = data(:,4);
+       gyroy = data(:,5);
+       gyroz = data(:,6); 
 
 tam = length(gyrox);
 
 %% Calibração
        
-[accx_0 accy_0 accz_0 gyrox_0 gyroy_0 gyroz_0] = imu_calibration();
+calib_acc = [calib(:,1) calib(:,2) calib(:,3)];
+calib_gyro = [calib(:,4) calib(:,5) calib(:,6)];
 
-accx = accx;% + accx_0;
-accy = accy;%+ accy_0;
-accz = accz;%+ accz_0;
+mean_calib_acc = mean(calib_acc);
+mean_calib_gyro = mean(calib_gyro);
 
-gyrox = gyrox + gyrox_0;
-gyroy = gyroy + gyroy_0;
-gyroz = gyroz + gyroz_0;
+accx = accx - mean_calib_acc(1,1);
+accy = accy - mean_calib_acc(1,2);
+accz = accz - (9.8 - mean_calib_acc(1,3));
+
+gyrox = gyrox - mean_calib_gyro(1,1);
+gyroy = gyroy - mean_calib_gyro(1,2);
+gyroz = gyroz - mean_calib_gyro(1,3);
 
 %% Preparação
 x = [1 0 0 0]'; %Nosso quatérnio
 dt = 1/100;
-g = 9.8;
+g = 9.78;
 
 F = eye(4);
-P = eye(4);
+P = 0.1*eye(4);
+P(4,4) = 0;
 
-Q = [0.001 -0.0003 0.0003 0.0003;-0.0003 0.0001 -0.0001 -0.0001;0.0003 -0.0001 0.0001 0.0001;0.0003 -0.0001 0.0001 0.0001];
-R = 1*[10 0 0 0;0 0.7511 0 0;0 0 0.7759 0;0 0 0 0.8648];
 
+gyro = [gyrox gyroy gyroz];
+a = [accx accy accz];
+
+Q = diag([1 var(calib_gyro)]);
+Q(4,4) = 0.00001;
+R = diag([1 var(calib_acc)]);
+R(4,4) = 1;
 
 %% Kalman Filter
 for i=1:tam
@@ -78,7 +89,7 @@ for i=1:tam
            q0^2-q1^2-q2^2+q3^2];
          
     y = [0 accx(i) accy(i) accz(i)]';
-    z = y - y_;
+    z = y - y_
   %Update
     H = [ 0   0   0  0
          -q2  q3 -q0 q1   
@@ -122,7 +133,6 @@ for i = 1 : tam
     tform.Header.Stamp = rostime('now');
     sendTransform(tftree,tform);
     pause(dt)
-    i
 end
-break
+
 end
