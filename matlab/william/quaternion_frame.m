@@ -1,5 +1,5 @@
 % quaternion frame
-
+function [output] = quaternion_frame();
 %% Leitura
 movimento_filename = '../../datasets/simulation/movimento.csv';
 parado_filename = '../../datasets/simulation/parado.csv';
@@ -35,11 +35,11 @@ gyroz = gyroz - mean_calib_gyro(1,3);
 
 %% Preparação
 x = [1 0 0 0]'; %Nosso quatérnio
-dt = 1/100;
-g = 9.78;
+dt = 1/400;
+g = 9.8;
 
 F = eye(4);
-P = 0.1*eye(4);
+P = eye(4);
 P(4,4) = 0;
 
 
@@ -105,6 +105,7 @@ for i=1:tam
 end
 
 %% ROS
+%{
 rosshutdown % desligar antes
 rosinit % roscore
 
@@ -135,4 +136,6 @@ for i = 1 : tam
     pause(dt)
 end
 
+end
+%}
 end

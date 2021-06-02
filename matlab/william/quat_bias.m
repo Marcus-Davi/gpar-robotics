@@ -1,21 +1,7 @@
 %Extended Kalman Filter (Quaternion with bias)
-%{
-State Vector
-| q  |
-| wb |
-Onde
-q = q0 q1 q2 q3
-wb = 0 wbx wby wbz
-
-x --> 8x1
-f --> 8x1
-F --> 8x8
-
-h --> 4x1
-x --> 8x1
-H --> 4x8
-%}
 %% Leitura
+clear;
+clc;
 movimento_filename = '../../datasets/simulation/movimento.csv';
 parado_filename = '../../datasets/simulation/parado.csv';
 
@@ -48,25 +34,29 @@ gyrox = gyrox - mean_calib_gyro(1,1);
 gyroy = gyroy - mean_calib_gyro(1,2);
 gyroz = gyroz - mean_calib_gyro(1,3);
 
-wbx = mean_calib_gyro(1,1);
-wby = mean_calib_gyro(1,2);
-wbz = mean_calib_gyro(1,3);
-
-
 %% Preparação
-x = [1 0 0 0 0 0 0 0]; 
-dt = 1/100;
+x = [1 0 0 0 0 0 0]; 
+dt = 1/400;
 g = 9.8;
 
-F = eye(8);
-P = 0.1*eye(8);
+F = eye(7);
+P = 0.1*eye(7);
+%I have to understand what change in here.
+P(7,7) = 0;
 P(4,4) = 0;
 
 gyro = [gyrox gyroy gyroz];
 a = [accx accy accz];
 
-Q = diag([1 var(calib_gyro) 1 wbx wby wbz]);
-Q(4,4) = 0.00001;
+G = [zeros(4,3);eye(3)]
+Q = diag(var(calib_gyro));
+
+
+%I'm changing the Q(4,4)
+%Q = diag([1 var(calib_gyro) dt^2 dt^2 dt^2]);
+%Could I multiply for dt^2?
+
+
 R = diag([1 var(calib_acc)]);
 R(4,4) = 1;
 
@@ -76,28 +66,26 @@ for i=1:tam
    q1 = x(2);
    q2 = x(3);
    q3 = x(4); 
-  wbx = x(6);
-  wby = x(7);
-  wbz = x(8);
+  wbx = x(5);
+  wby = x(6);
+  wbz = x(7);
   
   q = [q0;q1;q2;q3];
-  wb = [0;wbx;wby;wbz];
+  wb = [wbx;wby;wbz];
   
   
   wx = gyrox(i);
   wy = gyroy(i);
   wz = gyroz(i);
    
-
 % Prediction
-F = (dt/2)*[2/dt wbx-wx wby-wy wbz-wz 0  q1   q2   q3
-            wx-wbx 2/dt wz-wbz wby-wy 0 -q0   q3  -q2
-            wy-wby wbz-wz 2/dt wx-wbx 0 -q3  -q0   q1
-            wz-wbz wy-wby wbx-wx 2/dt 0  q2  -q1  -q0
-              0      0      0     0   0   0    0    0
-              0      0      0     0   0  2/dt  0    0
-              0      0      0     0   0   0  2/dt   0
-              0      0      0     0   0   0    0  2/dt];
+F = (dt/2)*[2/dt wbx-wx wby-wy wbz-wz   q1   q2   q3
+            wx-wbx 2/dt wz-wbz wby-wy  -q0   q3  -q2
+            wy-wby wbz-wz 2/dt wx-wbx  -q3  -q0   q1
+            wz-wbz wy-wby wbx-wx 2/dt   q2  -q1  -q0
+              0      0      0     0     2/dt  0    0
+              0      0      0     0      0  2/dt   0
+              0      0      0     0      0    0  2/dt];
           
 X = [-q1*(wx-wbx)-q2*(wy-wby)-q3*(wz-wbz) 
       q0*(wx-wbx)-q3*(wy-wby)+q2*(wz-wbz)
@@ -107,10 +95,11 @@ X = [-q1*(wx-wbx)-q2*(wy-wby)-q3*(wz-wbz)
 x_ = [q + (dt/2)*X
         wb      ];
     
-P_ = F*P*F' + Q;
+P_ = F*P*F' + G*Q*G';
+%P_ = F*P*F' + Q;
 
 % Measurement
-q0 = x_(1);
+   q0 = x_(1);
    q1 = x_(2);
    q2 = x_(3);
    q3 = x_(4);
@@ -123,30 +112,34 @@ q0 = x_(1);
     y = [0 accx(i) accy(i) accz(i)]';
     z = y - y_;
 % Update
-H = g*[ 0     0     0     0   0 0 0 0
-      -2*q2  2*q3 -2*q0  2*q1 0 0 0 0
-       2*q1  2*q0  2*q3  2*q2 0 0 0 0
-       2*q0 -2*q1 -2*q2  2*q3 0 0 0 0];
+H = g*[ 0     0     0     0   0 0 0
+      -2*q2  2*q3 -2*q0  2*q1 0 0 0
+       2*q1  2*q0  2*q3  2*q2 0 0 0
+       2*q0 -2*q1 -2*q2  2*q3 0 0 0];
    
 K = P_*H'*(H*P_*H'+R)^-1;
-P = (eye(8)-K*H)*P_';
+P = (eye(7)-K*H)*P_';
 x = x_ + K*z;
 
 %Output
-    output(i,1) = normalize(quaternion(x(1),x(2),x(3),x(4)));
-    bias(i,:) = [x(6) x(7) x(8)];
+    output_bias(i,1) = normalize(quaternion(x(1),x(2),x(3),x(4)));
+    bias(i,:) = [x(5) x(6) x(7)];
     
 end
 
+euler = quat2eul(output_bias);
+plot(euler);
+
+output = quaternion_frame();
 %% ROS
 %%{
 rosshutdown % desligar antes
 rosinit % roscore
 
-% Ros data
+% Ros bias
 tftree = rostf;
 tform = rosmessage('geometry_msgs/TransformStamped');
-tform.ChildFrameId = 'imu';
+tform.ChildFrameId = 'imu_bias';
 tform.Header.FrameId = 'map';
 tform.Transform.Translation.X = 0;
 tform.Transform.Translation.Y = 0;
@@ -156,10 +149,25 @@ tform.Transform.Rotation.X = 0;
 tform.Transform.Rotation.Y = 0;
 tform.Transform.Rotation.Z = 0;
 
+% Ros without bias
+%{
+tform2 = rosmessage('geometry_msgs/TransformStamped');
+tform2.ChildFrameId = 'imu';
+tform2.Header.FrameId = 'map';
+tform2.Transform.Translation.X = 0.5; % só pra ficar distante e melhorar visualização
+tform2.Transform.Translation.Y = 0;
+tform2.Transform.Translation.Z = 0;
+tform2.Transform.Rotation.W = 1;
+tform2.Transform.Rotation.X = 0;
+tform2.Transform.Rotation.Y = 0;
+tform2.Transform.Rotation.Z = 0;
+%}
 while(1)  
 for i = 1 : tam
 
-    [a b c d] = parts(output(i));
+    [a b c d] = parts(output_bias(i));
+    [q0 q1 q2 q3] = parts(output(i));
+    
     
     tform.Transform.Rotation.W = a;
     tform.Transform.Rotation.X = b;
@@ -167,6 +175,15 @@ for i = 1 : tam
     tform.Transform.Rotation.Z = d;
     tform.Header.Stamp = rostime('now');
     sendTransform(tftree,tform);
+    
+    %{
+    tform2.Transform.Rotation.W = q0;
+    tform2.Transform.Rotation.X = q1;
+    tform2.Transform.Rotation.Y = q2;
+    tform2.Transform.Rotation.Z = q3;
+    tform2.Header.Stamp = rostime('now');
+    sendTransform(tftree,tform2);
+    %}
     pause(dt)
 end
 end
