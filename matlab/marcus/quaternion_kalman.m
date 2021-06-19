@@ -11,11 +11,14 @@ clear;close all;clc
 % achei melhor puxar direto da pasta
 movimento_filename = '../../datasets/simulation/movimento.csv';
 parado_filename = '../../datasets/simulation/parado.csv';
+ground_truth_filename = '../../datasets/simulation/ground_truth.csv';
 
 
 
 data = csvread(movimento_filename);
 calib_data = csvread(parado_filename);
+ground_truth = csvread(ground_truth_filename);
+
 
 acc = [data(:,1) data(:,2) data(:,3)];
 gyr = [data(:,4) data(:,5) data(:,6)];
@@ -37,7 +40,7 @@ acc_calibrado = acc;
 %% Modelo
 freq = 400; % precisa ser o mesmo do gera_dados.m
 Ts = 1/freq;
-g = [0 0 9.9]'; % gravidade "errada" pra reduzir instabilidade
+g = [0 0 9.8]'; % gravidade "errada" pra reduzir instabilidade
 samples = length(data);
 
 %% Kalman
@@ -132,12 +135,15 @@ for i = 1 : samples
     X_GYRO(i,:) = x_pure_gyro;
 end
 euler = quat2eul(X,'XYZ');
+euler_true = quat2eul(ground_truth,'XYZ');
+plot(euler(:,2),'--')
 
-plot(euler)
-legend('roll','pitch','yaw')
+hold on
+plot(euler_true(:,2))
+legend('pitch','true pitch')
 
 
-% return
+return
 %% Visualization
 for i = 1 : samples
     x = X(i,:);

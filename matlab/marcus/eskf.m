@@ -40,7 +40,7 @@ acc_calibrado = acc;
 %% Modelo
 freq = 400; % precisa ser o mesmo do gera_dados.m
 Ts = 1/freq;
-g = [0 0 9.81]'; % gravidade "errada" pra reduzir instabilidade
+g = [0 0 9.4]'; % gravidade "errada" pra reduzir instabilidade
 samples = length(data);
 
 %% Kalman
@@ -165,7 +165,7 @@ plot(euler_true(:,2))
 legend('pitch','true pitch')
 
 
-% return
+return
 %% Visualization
 for i = 1 : samples
     x = X(i,:);
