@@ -5,17 +5,19 @@ clear;close all;clc
 %../../datasets/simulation/gera_dados.m
 
 % addpath('../../datasets/simulation') % comentado para não bagunçar a
-% salva de arquivos, referencias.. 
+% salva de arquivos, referencias..
 
 
 % achei melhor puxar direto da pasta
 movimento_filename = '../../datasets/simulation/movimento.csv';
 parado_filename = '../../datasets/simulation/parado.csv';
+ground_truth_filename = '../../datasets/simulation/ground_truth.csv';
 
 
 
 data = csvread(movimento_filename);
 calib_data = csvread(parado_filename);
+ground_truth = csvread(ground_truth_filename);
 
 acc = [data(:,1) data(:,2) data(:,3)];
 gyr = [data(:,4) data(:,5) data(:,6)];
@@ -28,35 +30,36 @@ acc_caluib_mean = mean(acc_calib);
 gyr_calib_mean = mean(gyr_calib); %bias
 
 % gyr_calib_mean(3) = -0.05; % bias artificia
-gyr_calib_mean(2) = -0.05; % bias artificial
+% gyr_calib_mean(2) = -0.05; % bias artificial
 % gyr_calib_mean(1) = -0.05; % bias artificial
-gyr_calibrado = gyr - gyr_calib_mean; %remove bias
+
+gyr_calibrado = gyr;% - gyr_calib_mean; %remove bias
 acc_calibrado = acc;
 
 
 %% Modelo
 freq = 400; % precisa ser o mesmo do gera_dados.m
 Ts = 1/freq;
-g = [0 0 9.9]'; % gravidade "errada" pra reduzir instabilidade
+g = [0 0 9.81]'; % gravidade "errada" pra reduzir instabilidade
 samples = length(data);
 
 %% Kalman
 % Parametros Kalman
-Qn = 1*diag([1 var(gyr_calib)]);
+Qn = 1*diag([var(gyr_calib)]);
+Qn = blkdiag(Qn,diag([0.1 0.1 0.1]));
 % Qn(4,4) = 0.00001; % variancia no eixo z menor para "confiarmos" mais na medida do gyro
 
-Rn = 1*diag([1 var(acc_calib)]);
-Rn(4,4) = 1;
+Rn = 1*diag([var(acc_calib)]);
+% Rn(4,4) = 1;
 
-Pk = 0.1*eye(4); % erro inicial é proximo de zero
-Pk(4,4) = 0; %erro no eixo z é 0 (tende ao gyro)
+Pk = zeros(6);
 
 x = [1 0 0 0]'; %fusion
 x_pure_gyro = [1 0 0 0]'; %gyro only
 %% ROS
 rosshutdown % desligar antes
 rosinit % roscore
-    
+
 % Ros data
 tftree = rostf;
 
@@ -93,48 +96,73 @@ tform2.Transform.Rotation.Z = 0;
 X = zeros(samples,4);
 X_GYRO = zeros(samples,4);
 
+w_bias = [0 0 0]';
 for i = 1 : samples
-    w_measure = [0 gyr_calibrado(i,1) gyr_calibrado(i,2) gyr_calibrado(i,3)]'; %quaterniana
-    a_measure = [0 acc_calibrado(i,1) acc_calibrado(i,2) acc_calibrado(i,3)]';
-   
+    w_measure = [gyr_calibrado(i,1) gyr_calibrado(i,2) gyr_calibrado(i,3)]'; %quaterniana
+    a_measure = [acc_calibrado(i,1) acc_calibrado(i,2) acc_calibrado(i,3)]';
+    
     % predict
-    x = (x' + (Ts/2)*quatmultiply(x', w_measure'))';%Assume calibrado (bias constante) %-Ts/2 *quatmultiply(q_k,[0 bias]);
+    uk = [0; w_measure - w_bias]';
+    x = (x' + (Ts/2)*quatmultiply(x', uk))';%Assume calibrado (bias constante) %-Ts/2 *quatmultiply(q_k,[0 bias]);
+    w_bias = w_bias;
     
-    x_pure_gyro = (x_pure_gyro' + (Ts/2)*quatmultiply(x_pure_gyro', w_measure'))';% integração
     
-    Jf = (Ts/2)*[2/Ts -w_measure(1) -w_measure(2) -w_measure(3);
-        w_measure(1) 2/Ts w_measure(3) -w_measure(2);
-        w_measure(2) -w_measure(3) 2/Ts w_measure(1)
-        w_measure(3) w_measure(2) -w_measure(1) 2/Ts];
     
-    Pk = Jf*Pk*Jf' + Qn;
-    
+    %     R = quat2rotm(x');
+    F = [quat2rotm(uk*Ts) -Ts*eye(3);
+        zeros(3) eye(3)];
+    Pk = F*Pk*F' + Qn;
     
     % Update
-    a_est = quatrotate(x',g')'; %nav2body
+    %     a_est2 = g(3)*[2* (x(2)*x(4) - x(1)*x(3));
+    %                    2* (x(1)*x(2) - x(3)*x(4));
+    %                 x(1)*x(1)-x(2)*x(2)-x(3)*x(3)+x(4)*x(4)];
     
-    y_est = [0; a_est];
-    y_in = a_measure;
-    
-    Jh =2*g(3)*[0 0 0 0 ;
-        -x(3) x(4) -x(1) x(2);
+    %jacobiana da medida em relação ao erro
+    % H = d h(x)/ dx * dx / d(deltax)
+    Hx = 2*g(3)*[-x(3) x(4) -x(1) x(2);
         x(2) x(1) x(4) x(3);
-        x(1) -x(2) -x(3) x(4)]; 
+        x(1) -x(2) -x(3) x(4)];
     
-    Kk = Pk*Jh'*inv(Jh*Pk*Jh'+Rn);
+    Hdx = 1/2 * [-x(2) -x(3) -x(4);
+        x(1) x(4) -x(3);
+        -x(4) x(1) x(2);
+        x(3) -x(2) x(1)];
     
-    x = x + Kk*(y_in-y_est);  
+    H = [Hx*Hdx zeros(3)];
     
-    Pk = (eye(4) - Kk*Jh)*Pk;
+    Kk = Pk*H'*inv(H*Pk*H' + Rn);
+    
+    a_est = quatrotate(x',g')'; %nav2body
+        
+    dX = Kk*(a_measure - a_est);
+    % dx = [deltaQuat, deltaBias]
+    deltaRot = dX(1:3);
+    deltaRotNorm = norm(deltaRot);
+    deltaRotQuat = [cos(deltaRotNorm/2);
+        (deltaRot/deltaRotNorm)*sin(deltaRotNorm)/2];
+    
+
+   
+    x = quatmultiply(x',deltaRotQuat')';
+    w_bias = w_bias + dX(4:end);
+    
+    Pk = (eye(6) - Kk*H)*Pk;
+    
+    
+    
     
     % acumuladores
-    X(i,:) = x; 
+    X(i,:) = x;
     X_GYRO(i,:) = x_pure_gyro;
 end
 euler = quat2eul(X,'XYZ');
+euler_true = quat2eul(ground_truth,'XYZ');
+plot(euler(:,2),'--')
 
-plot(euler)
-legend('roll','pitch','yaw')
+hold on
+plot(euler_true(:,2))
+legend('pitch','true pitch')
 
 
 % return
@@ -146,7 +174,7 @@ for i = 1 : samples
     x = quatnormalize(x);
     x_pure_gyro = quatnormalize(x_pure_gyro);
     
-  
+    
     tform.Transform.Rotation.W = x(1);
     tform.Transform.Rotation.X = x(2);
     tform.Transform.Rotation.Y = x(3);
@@ -164,7 +192,7 @@ for i = 1 : samples
     
     pause(Ts)
     i
-
+    
 end
 
 

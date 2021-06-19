@@ -54,20 +54,23 @@ legend('Gx','Gy','Gz')
  %% Gera dados - pitch pra cima e pra baixo
  % Perfil 
 motion0 = [0 0 0 0 0 0]';
-motion1 = [0 0 0 0 pi/2 0]';
-motion2 = [0 0 0 0 0 0]'; %volta pra origem
- 
+motion1 = [0 0 0 0 pi/4 0]';
+motion2 = [0 0 0 0 -pi/4 0]'; %volta pra origem
+motion3 = [0 0 0 0 0 0]'; %volta pra origem
                                
 [acc_lin0,vel_ang0,orientation0] = ikinematics(motion0,motion1,samples/2,1/freq,0.99);
 [acc_lin1,vel_ang1,orientation1] = ikinematics(motion1,motion2,samples/2,1/freq,0.99);
+[acc_lin2,vel_ang2,orientation2] = ikinematics(motion2,motion3,samples/2,1/freq,0.99);
 
-acc_lin = [acc_lin0;acc_lin1];
-vel_ang = [vel_ang0;vel_ang1];
-orientation = [orientation0; orientation1];
+acc_lin = [acc_lin0;acc_lin1; acc_lin2];
+vel_ang = [vel_ang0;vel_ang1; vel_ang2];
+orientation = [orientation0; orientation1; orientation2];
+
 
 
  [acc_data, gyr_data] = imu(acc_lin, vel_ang,orientation);
 csvwrite('movimento.csv',[acc_data , gyr_data]);
+csvwrite('ground_truth.csv',compact(orientation));
  
 
 figure
