@@ -31,9 +31,9 @@ acc_caluib_mean = mean(acc_calib);
 gyr_calib_mean = mean(gyr_calib); %bias
 
 % gyr_calib_mean(3) = -0.05; % bias artificia
-gyr_calib_mean(2) = -0.05; % bias artificial
+% gyr_calib_mean(2) = -0.05; % bias artificial
 % gyr_calib_mean(1) = -0.05; % bias artificial
-gyr_calibrado = gyr - gyr_calib_mean; %remove bias
+gyr_calibrado = gyr; % - gyr_calib_mean; %remove bias
 acc_calibrado = acc;
 
 

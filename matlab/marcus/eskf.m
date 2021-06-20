@@ -33,23 +33,24 @@ gyr_calib_mean = mean(gyr_calib); %bias
 % gyr_calib_mean(2) = -0.05; % bias artificial
 % gyr_calib_mean(1) = -0.05; % bias artificial
 
-gyr_calibrado = gyr;% - gyr_calib_mean; %remove bias
+gyr_calibrado = gyr %- gyr_calib_mean; %remove bias
 acc_calibrado = acc;
 
 
 %% Modelo
 freq = 400; % precisa ser o mesmo do gera_dados.m
 Ts = 1/freq;
-g = [0 0 9.4]'; % gravidade "errada" pra reduzir instabilidade
+g = [0 0 9.81]'; % gravidade "errada" pra reduzir instabilidade
 samples = length(data);
 
-%% Kalman
+%% Kalman1
 % Parametros Kalman
-Qn = 1*diag([var(gyr_calib)]);
-Qn = blkdiag(Qn,diag([0.1 0.1 0.1]));
+Qn_gyr = Ts^2*diag(var(gyr_calib));
+Qn_bias = Ts*diag([0.001 0.001 0.001]);
+Qn = blkdiag(Qn_gyr,Qn_bias);
 % Qn(4,4) = 0.00001; % variancia no eixo z menor para "confiarmos" mais na medida do gyro
 
-Rn = 1*diag([var(acc_calib)]);
+Rn = 1*diag(var(acc_calib));
 % Rn(4,4) = 1;
 
 Pk = zeros(6);
@@ -113,10 +114,6 @@ for i = 1 : samples
         zeros(3) eye(3)];
     Pk = F*Pk*F' + Qn;
     
-    % Update
-    %     a_est2 = g(3)*[2* (x(2)*x(4) - x(1)*x(3));
-    %                    2* (x(1)*x(2) - x(3)*x(4));
-    %                 x(1)*x(1)-x(2)*x(2)-x(3)*x(3)+x(4)*x(4)];
     
     %jacobiana da medida em relação ao erro
     % H = d h(x)/ dx * dx / d(deltax)
@@ -146,7 +143,6 @@ for i = 1 : samples
    
     x = quatmultiply(x',deltaRotQuat')';
     w_bias = w_bias + dX(4:end);
-    
     Pk = (eye(6) - Kk*H)*Pk;
     
     
