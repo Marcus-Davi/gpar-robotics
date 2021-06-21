@@ -33,7 +33,7 @@ gyr_calib_mean = mean(gyr_calib); %bias
 % gyr_calib_mean(2) = -0.05; % bias artificial
 % gyr_calib_mean(1) = -0.05; % bias artificial
 
-gyr_calibrado = gyr %- gyr_calib_mean; %remove bias
+gyr_calibrado = gyr- gyr_calib_mean; %remove bias
 acc_calibrado = acc;
 
 
@@ -108,44 +108,43 @@ for i = 1 : samples
     w_bias = w_bias;
     
     
-    
-    %     R = quat2rotm(x');
-    F = [quat2rotm(uk*Ts) -Ts*eye(3);
+ 
+    Jf = [quat2rotm(uk*Ts) -Ts*eye(3);
         zeros(3) eye(3)];
-    Pk = F*Pk*F' + Qn;
+    Pk = Jf*Pk*Jf' + Qn;
     
-    
-    %jacobiana da medida em relação ao erro
-    % H = d h(x)/ dx * dx / d(deltax)
-    Hx = 2*g(3)*[-x(3) x(4) -x(1) x(2);
-        x(2) x(1) x(4) x(3);
-        x(1) -x(2) -x(3) x(4)];
-    
-    Hdx = 1/2 * [-x(2) -x(3) -x(4);
-        x(1) x(4) -x(3);
-        -x(4) x(1) x(2);
-        x(3) -x(2) x(1)];
-    
-    H = [Hx*Hdx zeros(3)];
-    
-    Kk = Pk*H'*inv(H*Pk*H' + Rn);
-    
-    a_est = quatrotate(x',g')'; %nav2body
+    if i > 1
+        %jacobiana da medida em relação ao erro
+        % H = d h(x)/ dx * dx / d(deltax)
+        Hx = 2*g(3)*[-x(3) x(4) -x(1) x(2);
+            x(2) x(1) x(4) x(3);
+            x(1) -x(2) -x(3) x(4)];
         
-    dX = Kk*(a_measure - a_est);
-    % dx = [deltaQuat, deltaBias]
-    deltaRot = dX(1:3);
-    deltaRotNorm = norm(deltaRot);
-    deltaRotQuat = [cos(deltaRotNorm/2);
-        (deltaRot/deltaRotNorm)*sin(deltaRotNorm)/2];
-    
+        Hdx = 1/2 * [-x(2) -x(3) -x(4);
+            x(1) x(4) -x(3);
+            -x(4) x(1) x(2);
+            x(3) -x(2) x(1)];
+        
+        H = [Hx*Hdx zeros(3)];
+        
+        Kk = Pk*H'*inv(H*Pk*H' + Rn);
+        
+        a_est = quatrotate(x',g')'; %nav2body
+        
+        dX = Kk*(a_measure - a_est);
 
-   
-    x = quatmultiply(x',deltaRotQuat')';
-    w_bias = w_bias + dX(4:end);
-    Pk = (eye(6) - Kk*H)*Pk;
-    
-    
+        deltaRot = dX(1:3);
+        deltaRotNorm = norm(deltaRot);
+        deltaRotQuat = [cos(deltaRotNorm/2);
+            (deltaRot/deltaRotNorm)*sin(deltaRotNorm)/2];
+        
+        
+        
+        x = quatmultiply(x',deltaRotQuat')';
+        w_bias = w_bias + dX(4:end);
+        Pk = (eye(6) - Kk*H)*Pk;
+        
+    end
     
     
     % acumuladores
@@ -154,14 +153,27 @@ for i = 1 : samples
 end
 euler = quat2eul(X,'XYZ');
 euler_true = quat2eul(ground_truth,'XYZ');
-plot(euler(:,2),'--')
 
+subplot(3,1,1)
+plot(euler(:,1),'--')
+hold on
+plot(euler_true(:,1))
+legend('roll','true roll')
+
+subplot(3,1,2)
+plot(euler(:,2),'--')
 hold on
 plot(euler_true(:,2))
 legend('pitch','true pitch')
 
+subplot(3,1,3)
+plot(euler(:,3),'--')
+hold on
+plot(euler_true(:,3))
+legend('yaw','true yaw')
 
-return
+
+% return
 %% Visualization
 for i = 1 : samples
     x = X(i,:);

@@ -33,23 +33,22 @@ gyr_calib_mean = mean(gyr_calib); %bias
 % gyr_calib_mean(3) = -0.05; % bias artificia
 % gyr_calib_mean(2) = -0.05; % bias artificial
 % gyr_calib_mean(1) = -0.05; % bias artificial
-gyr_calibrado = gyr; % - gyr_calib_mean; %remove bias
+gyr_calibrado = gyr - gyr_calib_mean; %remove bias
 acc_calibrado = acc;
 
 
 %% Modelo
 freq = 400; % precisa ser o mesmo do gera_dados.m
 Ts = 1/freq;
-g = [0 0 9.8]'; % gravidade "errada" pra reduzir instabilidade
+g = [0 0 9.81]'; % gravidade "errada" pra reduzir instabilidade
 samples = length(data);
 
 %% Kalman
 % Parametros Kalman
-Qn = 1*diag([1 var(gyr_calib)]);
+Qn = Ts^2*diag([1 var(gyr_calib)]);
 % Qn(4,4) = 0.00001; % variancia no eixo z menor para "confiarmos" mais na medida do gyro
 
-Rn = 1*diag([1 var(acc_calib)]);
-Rn(4,4) = 1;
+Rn = diag(var(acc_calib));
 
 Pk = 0.1*eye(4); % erro inicial é proximo de zero
 Pk(4,4) = 0; %erro no eixo z é 0 (tende ao gyro)
@@ -98,7 +97,7 @@ X_GYRO = zeros(samples,4);
 
 for i = 1 : samples
     w_measure = [0 gyr_calibrado(i,1) gyr_calibrado(i,2) gyr_calibrado(i,3)]'; %quaterniana
-    a_measure = [0 acc_calibrado(i,1) acc_calibrado(i,2) acc_calibrado(i,3)]';
+    a_measure = [acc_calibrado(i,1) acc_calibrado(i,2) acc_calibrado(i,3)]';
    
     % predict
     x = (x' + (Ts/2)*quatmultiply(x', w_measure'))';%Assume calibrado (bias constante) %-Ts/2 *quatmultiply(q_k,[0 bias]);
@@ -116,17 +115,16 @@ for i = 1 : samples
     % Update
     a_est = quatrotate(x',g')'; %nav2body
     
-    y_est = [0; a_est];
+    y_est = a_est;
     y_in = a_measure;
     
-    Jh =2*g(3)*[0 0 0 0 ;
-        -x(3) x(4) -x(1) x(2);
+    Jh =2*g(3)*[-x(3) x(4) -x(1) x(2);
         x(2) x(1) x(4) x(3);
         x(1) -x(2) -x(3) x(4)]; 
     
     Kk = Pk*Jh'*inv(Jh*Pk*Jh'+Rn);
-    
-    x = x + Kk*(y_in-y_est);  
+    deltaX = Kk*(y_in-y_est); 
+    x = x + deltaX;
     
     Pk = (eye(4) - Kk*Jh)*Pk;
     
@@ -136,14 +134,26 @@ for i = 1 : samples
 end
 euler = quat2eul(X,'XYZ');
 euler_true = quat2eul(ground_truth,'XYZ');
-plot(euler(:,2),'--')
 
+subplot(3,1,1)
+plot(euler(:,1),'--')
+hold on
+plot(euler_true(:,1))
+legend('roll','true roll')
+
+subplot(3,1,2)
+plot(euler(:,2),'--')
 hold on
 plot(euler_true(:,2))
 legend('pitch','true pitch')
 
+subplot(3,1,3)
+plot(euler(:,3),'--')
+hold on
+plot(euler_true(:,3))
+legend('yaw','true yaw')
 
-return
+% return
 %% Visualization
 for i = 1 : samples
     x = X(i,:);

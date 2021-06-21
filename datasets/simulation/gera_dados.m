@@ -27,7 +27,7 @@ acc_params = accelparams(...
      'TemperatureScaleFactor',0.02,...
      'AxesMisalignment',0,... %2
      'AccelerationBias',0.178e-3,...
-     'BiasInstability', 0.01);
+     'BiasInstability', 0.1);
  imu.Gyroscope = gyr_params;
 
  
@@ -54,17 +54,23 @@ legend('Gx','Gy','Gz')
  %% Gera dados - pitch pra cima e pra baixo
  % Perfil 
 motion0 = [0 0 0 0 0 0]';
-motion1 = [0 0 0 0 pi/4 0]';
+motion1 = [0 0 0 0 pi/4 0]'; % movimento linear
 motion2 = [0 0 0 0 -pi/4 0]'; %volta pra origem
 motion3 = [0 0 0 0 0 0]'; %volta pra origem
+motion4= [0 0 0 -pi/3 0 0]'; %volta pra origem
+motion5= [0 0 0 pi/3 0 0]'; %volta pra origem
+motion6 = [0 0 0 0 0 0]'; %volta pra origem
                                
-[acc_lin0,vel_ang0,orientation0] = ikinematics(motion0,motion1,samples/2,1/freq,0.99);
-[acc_lin1,vel_ang1,orientation1] = ikinematics(motion1,motion2,samples/2,1/freq,0.99);
-[acc_lin2,vel_ang2,orientation2] = ikinematics(motion2,motion3,samples/2,1/freq,0.99);
+[acc_lin0,vel_ang0,orientation0] = ikinematics(motion0,motion1,samples/2,1/freq,0.95);
+[acc_lin1,vel_ang1,orientation1] = ikinematics(motion1,motion2,samples/2,1/freq,0.95);
+[acc_lin2,vel_ang2,orientation2] = ikinematics(motion2,motion3,samples/2,1/freq,0.95);
+[acc_lin3,vel_ang3,orientation3] = ikinematics(motion3,motion4,samples/2,1/freq,0.95);
+[acc_lin4,vel_ang4,orientation4] = ikinematics(motion4,motion5,samples/2,1/freq,0.95);
+[acc_lin5,vel_ang5,orientation5] = ikinematics(motion5,motion6,samples/2,1/freq,0.95);
 
-acc_lin = [acc_lin0;acc_lin1; acc_lin2];
-vel_ang = [vel_ang0;vel_ang1; vel_ang2];
-orientation = [orientation0; orientation1; orientation2];
+acc_lin = [acc_lin0;acc_lin1; acc_lin2;acc_lin3;acc_lin4;acc_lin5];
+vel_ang = [vel_ang0;vel_ang1; vel_ang2; vel_ang3; vel_ang4;vel_ang5];
+orientation = [orientation0; orientation1; orientation2; orientation3;orientation4;orientation5];
 
 
 
