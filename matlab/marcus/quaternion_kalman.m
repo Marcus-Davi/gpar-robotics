@@ -47,8 +47,7 @@ samples = length(data);
 % Parametros Kalman
 Qn = Ts^2*diag([1 var(gyr_calib)]);
 % Qn(4,4) = 0.00001; % variancia no eixo z menor para "confiarmos" mais na medida do gyro
-
-Rn = diag(var(acc_calib));
+Maacc_calib));
 
 Pk = 0.1*eye(4); % erro inicial é proximo de zero
 Pk(4,4) = 0; %erro no eixo z é 0 (tende ao gyro)

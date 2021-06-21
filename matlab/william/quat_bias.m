@@ -51,7 +51,6 @@ a = [accx accy accz];
 G = [zeros(4,3);eye(3)]
 Q = diag(var(calib_gyro));
 
-
 %I'm changing the Q(4,4)
 %Q = diag([1 var(calib_gyro) dt^2 dt^2 dt^2]);
 %Could I multiply for dt^2?
@@ -118,7 +117,8 @@ H = g*[ 0     0     0     0   0 0 0
        2*q0 -2*q1 -2*q2  2*q3 0 0 0];
    
 K = P_*H'*(H*P_*H'+R)^-1;
-P = (eye(7)-K*H)*P_';
+%P = (eye(7)-K*H)*P_';
+ P = (eye(7)-K*H)*P_*(eye(7)-K*H)' + K*R*K';
 x = x_ + K*z;
 
 %Output
