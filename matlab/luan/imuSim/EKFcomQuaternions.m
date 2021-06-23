@@ -14,8 +14,9 @@ gyr = [data(:,4) data(:,5) data(:,6)];
 acc_calib = [calib_data(:,1) calib_data(:,2) calib_data(:,3)];
 gyr_calib = [calib_data(:,4) calib_data(:,5) calib_data(:,6)];
 
-gyr_calibrado = gyr;% - gyr_calib; % não calibra pra vermos o efeito da fusão
-acc_calibrado = acc;% - acc_calib;
+
+gyr_calibrado = gyr;% - mean(gyr_calib); % não calibra pra vermos o efeito da fusão
+acc_calibrado = acc;% - mean(acc_calib);
 
 %% modelo
 f = 400; %Hz
@@ -72,10 +73,10 @@ tformESKF.Transform.Rotation.Z = 0;
      eskf.predict(gyr_calibrado(i,:)');
 
      q_ekf = ekf.update(acc_calibrado(i,:)');
-     q_eskf = ekf.update(acc_calibrado(i,:)');
+     q_eskf = eskf.update(acc_calibrado(i,:)');
 
-     q_ekf_norm = q_ekf/norm(q_ekf);
-     q_eskf_norm = q_eskf/norm(q_eskf);
+     q_ekf_norm = q_ekf/norm(q_ekf)
+     q_eskf_norm = q_eskf/norm(q_eskf)
 
     tformEKF.Transform.Rotation.W = q_ekf_norm(1);
     tformEKF.Transform.Rotation.X = q_ekf_norm(2);

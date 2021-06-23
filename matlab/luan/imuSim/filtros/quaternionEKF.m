@@ -49,7 +49,7 @@ classdef quaternionEKF < handle
             K = obj.P* H'*inv(H * obj.P * H' + obj.R); %#ok<MINV>
             obj.x = obj.x + K*e;
             obj.P = obj.P - K*H*obj.P;
-            
+            obj.P
             x = obj.x;
         end
     end

@@ -1,91 +1,110 @@
-%-------------------------------------------------------------------------%
-% Programa para detectar movimento com base na leitura de um IMU          %                  
-%                                                                         %
-%     Luan Amaral                                                         % 
-%                                                                         %
-%-------------------------------------------------------------------------%
 clc, clear, close all
 addpath('./filtros', './movimentos')
 
-%% constantes 
-f = 100; %Hz
+movimento_filename = '../../../datasets/simulation/movimento.csv';
+parado_filename = '../../../datasets/simulation/parado.csv';
+
+%% dados
+data = csvread(movimento_filename);
+calib_data = csvread(parado_filename);
+
+acc = [data(:,1) data(:,2) data(:,3)];
+gyr = [data(:,4) data(:,5) data(:,6)];
+
+acc_calib = [calib_data(:,1) calib_data(:,2) calib_data(:,3)];
+gyr_calib = [calib_data(:,4) calib_data(:,5) calib_data(:,6)];
+
+
+gyr_calibrado = gyr;% - mean(gyr_calib); % não calibra pra vermos o efeito da fusão
+acc_calibrado = acc;% - mean(acc_calib);
+
+%% modelo
+f = 400; %Hz
 dt = 1/f;
 g = 9.8056;
-acc_bias = 0.49;
-acc_var = 0.7778;
-
-gyr_bias = 0.03491;
-gyr_var  = 1.817313845456145e-04; %dado experimentalmente
-
-%% Imu inicialização
-imu = imuSensor('accel-gyro');
-imu.SampleRate = f;
-acc_params = accelparams(...
-     'MeasurementRange',2*g,...
-     'Resolution',0.598e-3,...
-     'ConstantBias',0.49,...
-     'NoiseDensity',3920e-6,...
-     'TemperatureBias',0.294,...
-     'TemperatureScaleFactor',0.02,...
-     'AxesMisalignment',2,...
-     'BiasInstability', 0.7778);
- imu.Accelerometer = acc_params;
+samples = size(acc(:,1));
  
- gyr_params = gyroparams(...
-     'MeasurementRange',8.7266,... %500º/s
-     'Resolution',1.3323e-04,...
-     'ConstantBias',0.03491,...
-     'NoiseDensity',8.7266e-4,...
-     'TemperatureBias',0.349,...
-     'TemperatureScaleFactor',0.02,...
-     'AxesMisalignment',2,...
-     'AccelerationBias',0.178e-3,...
-     'BiasInstability', 0.05);
- imu.Gyroscope = gyr_params;
+  %% ROS
+ rosshutdown
+ rosinit
+ nome = strcat('pitch_imu','.csv');
 
- %% Leitura
+    
+angle_x = 0;
+angle_y = 0;
+angle_z = 0;
 
- samples = 1000;
- t = (0:(1/f):(samples -1)/f);
- 
-%  [acc_lin, vel_ang, rotvec] = linear_cos(f, samples, 1);
-[acc_lin, vel_ang, rotvec] = parado(samples);
- orientation = quaternion(rotvec, 'rotvec');
- 
- [acc_data, gyr_data] = imu(acc_lin, vel_ang, orientation);
- 
- %% detecção do movimento
+% Ros data
+tftree = rostf;
+tformMOV = rosmessage('geometry_msgs/TransformStamped');
+tformMOV.ChildFrameId = 'EKF';
+tformMOV.Header.FrameId = 'map';
+tformMOV.Transform.Translation.X = 0;
+tformMOV.Transform.Translation.Y = 0;
+tformMOV.Transform.Translation.Z = 0;
+tformMOV.Transform.Rotation.W = 1;
+tformMOV.Transform.Rotation.X = 0;
+tformMOV.Transform.Rotation.Y = 0;
+tformMOV.Transform.Rotation.Z = 0;
 
- %filtro passa baixa
- for i=2:samples
-    acc_data(i,:) = 0.1*acc_data(i,:) + 0.9*acc_data(i-1,:);  
+tformESKF = rosmessage('geometry_msgs/TransformStamped');
+tformESKF.ChildFrameId = 'ESKF';
+tformESKF.Header.FrameId = 'map';
+tformESKF.Transform.Translation.X = 0;
+tformESKF.Transform.Translation.Y = 0;
+tformESKF.Transform.Translation.Z = 0;
+tformESKF.Transform.Rotation.W = 1;
+tformESKF.Transform.Rotation.X = 0;
+tformESKF.Transform.Rotation.Y = 0;
+tformESKF.Transform.Rotation.Z = 0;
+
+
+ %% Filtro de Kalman
+
+  vec_gyr_var = 1 * [ 1 var(gyr_calib)];
+  vec_acc_var  = 10* [ 1 var(acc_calib)];
+  vec_gyr_var(4) = 0.001;
+  
+  x = zeros(6,samples(1));
+ eskf= quaternionESKF(dt,[0.001 0.001 0.001], vec_gyr_var, vec_acc_var);
+ 
+ for i=1:samples
+     %estimação da posição
+     eskf.predict(gyr_calibrado(i,:)');
+     q_eskf = eskf.update(acc_calibrado(i,:)');
+     q_eskf_norm = q_eskf/norm(q_eskf);
+     
+     %estimação da acc linear
+     acc_calibrado_global = quatmultiply(q_eskf_norm', [0, acc_calibrado(i,:)])';
+     acc_sgrav_global = acc_calibrado_global - [0;0;g];
+     
+     %dupla integração
+     x(1,i) = x(1,i-1) + x(2,i-1)*dt + acc_sgrav_global(2)*dt*dt/2;
+     x(2,i) = x(2,i-1) + acc_sgrav_global(2)*dt;
+     x(3,i) = x(3,i-1) + x(4,i-1)*dt + acc_sgrav_global(3)*dt*dt/2;
+     x(4,i) = x(4,i-1) + acc_sgrav_global(3)*dt;
+     x(5,i) = x(5,i-1) + x(6,i-1)*dt + acc_sgrav_global(4)*dt*dt/2;
+     x(6,i) = x(6,i-1) + acc_sgrav_global(4)*dt;
+     
+    tformMOV.Transform.Translation.X = x(1,i);
+    tformMOV.Transform.Translation.Y = x(3,i);
+    tformMOV.Transform.Translation.Z = x(5,i);
+    tformMOV.Transform.Rotation.W = q_eskf_norm(1);
+    tformMOV.Transform.Rotation.X = q_eskf_norm(2);
+    tformMOV.Transform.Rotation.Y = q_eskf_norm(3);
+    tformMOV.Transform.Rotation.Z = q_eskf_norm(4);
+    tformMOV.Header.Stamp = rostime('now');
+    sendTransform(tftree,tformMOV);
+    
+    tformESKF.Transform.Rotation.W = q_eskf_norm(1);
+    tformESKF.Transform.Rotation.X = q_eskf_norm(2);
+    tformESKF.Transform.Rotation.Y = q_eskf_norm(3);
+    tformESKF.Transform.Rotation.Z = q_eskf_norm(4);
+    tformESKF.Header.Stamp = rostime('now');
+    sendTransform(tftree,tformESKF);
+    
+    
+    pause(dt)
+
  end
- 
- modulo = zeros(samples, 1);
- moveu = zeros(samples, 1);
- 
- tol = sqrt(3*(acc_var*acc_var));
- 
- for i=2:samples
-     modulo(i) = sqrt(sum(acc_data(i,:).^2));
-     if( moveu(i-1) == 1 )
-         ntol = tol/3;
-     else
-         ntol = tol;
-     end       
-    if (abs(modulo(i)-g) < ntol)
-        %não houve aceleração
-    else
-        moveu(i) = 1;
-    end    
- end
- 
- %% Plots
- 
- figure
- hold on
- plot(moveu)
- title('MOVEU')
- hold off
- 
- 
+ %%
