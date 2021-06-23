@@ -1,4 +1,4 @@
-clear;close all;clc
+%clear;close all;clc
 % leitura do dataset
 
 %verificar os dados gerados pelo script
@@ -121,9 +121,9 @@ for i = 1 : samples
             x(1) -x(2) -x(3) x(4)];
         
         Hdx = 1/2 * [-x(2) -x(3) -x(4);
-            x(1) x(4) -x(3);
-            -x(4) x(1) x(2);
-            x(3) -x(2) x(1)];
+            x(1) -x(4) x(3);
+            x(4) x(1) -x(2);
+            -x(3) x(2) x(1)];
         
         H = [Hx*Hdx zeros(3)];
         

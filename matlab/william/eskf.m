@@ -78,7 +78,7 @@ for i=1:tam
                x(5:7)']; %Nominal State
     
     F = [quat2rotm((w-wb)*dt) -dt*eye(3)
-              zeros(3)                eye(3)];
+              zeros(3)           eye(3)];
     
     P_ = F*P*F' + Qn;
     
