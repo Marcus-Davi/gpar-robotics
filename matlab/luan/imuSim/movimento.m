@@ -69,7 +69,7 @@ tform2.Transform.Rotation.Z = 0;
   x = zeros(6,samples(1));
   
  quat_eskf = zeros(4,samples(1));
- eskf= quaternionESKF(dt,[0.001 0.001 0.001], vec_gyr_var, vec_acc_var);
+ eskf= quaternionESKF(dt,[0.001 0.001 0.001], vec_gyr_var, 15*vec_acc_var);
  
  for i=1:samples
      %estimação da posição

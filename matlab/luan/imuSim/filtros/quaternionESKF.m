@@ -1,9 +1,9 @@
 classdef quaternionESKF < handle
 
     properties
-        x = [1;0;0;0;0;0;0;0;0;9.81];
+        x = [1;0;0;0;0;0;0;0;0;9.7426];
         dt = 0;
-        P = 0.1*eye(9);
+        P = 0.1*blkdiag(eye(6),1*eye(3));
         R = 0;
         Q = 0;
        %x = [q0;q1;q23;q3];
@@ -14,7 +14,7 @@ classdef quaternionESKF < handle
     methods
         function obj = quaternionESKF(dt, gyr_noise, gyr_var, acc_var)
             obj.dt=dt;
-            obj.Q = blkdiag(diag(gyr_var), diag(gyr_noise), 0*eye(3));
+            obj.Q = blkdiag(dt^2*diag(gyr_var), dt*diag(gyr_noise), 0.001*eye(3));
             
             obj.R = diag([acc_var]); 
         end
@@ -60,7 +60,7 @@ classdef quaternionESKF < handle
             H = Hx*Hdx;
             
             e = y - y_hat; %#ok<NOPRT>
-            K = obj.P* H'*inv(H * obj.P * H' + obj.R); %#ok<MINV>
+            K = obj.P* H'*inv(H * obj.P * H' + obj.R) %#ok<MINV>
             dx = K*(e);
             obj.P = obj.P - K*H*obj.P;
             
@@ -71,6 +71,7 @@ classdef quaternionESKF < handle
             obj.x(1:4) = quatmultiply(obj.x(1:4)', dtheta_quat')';
             obj.x(5:10)=obj.x(5:10)+dx(4:9);
             x = obj.x(1:4);
+            obj.x;
         end
     end
 end
