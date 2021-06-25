@@ -7,6 +7,7 @@ classdef quaternionESKF < handle
         R = 0;
         Q = 0;
        %x = [q0;q1;q23;q3];
+       
         
     end
     
@@ -15,7 +16,7 @@ classdef quaternionESKF < handle
             obj.dt=dt;
             obj.Q = blkdiag(diag(gyr_var), diag(gyr_noise), 0*eye(3));
             
-            obj.R = diag([1; acc_var]); 
+            obj.R = diag([acc_var]); 
         end
         
         function x_pred = predict(obj,wm )
@@ -26,7 +27,7 @@ classdef quaternionESKF < handle
             q = q + obj.dt/2*quatmultiply(q',w')';
             obj.x(1:4) = q; 
             
-           F = [quat2rotm(w*obj.dt) -obj.dt*eye(3)  0*eye(3);
+           F = [quat2rotm(w'*obj.dt) -obj.dt*eye(3)  0*eye(3);
                 0*eye(3)                eye(3)      0*eye(3);
                 0*eye(3)              0*eye(3)        eye(3)];
                      
@@ -38,16 +39,18 @@ classdef quaternionESKF < handle
         
         function x = update(obj, g_measured)
             q  = obj.x(1:4);
+            g = norm(obj.x(8:10));
             y = [0 ; g_measured];
             
-            y_hat = quatrotate(q, [0;0;obj.g]')';
+            y_hat = quatrotate(q', obj.x(8:10)')';
             y_hat = [0;y_hat];
             
-            Hx = 2 *obj.g* [     0         0         0        0 ;
-                            -obj.x(3)  obj.x(4) -obj.x(1) obj.x(2);
-                             obj.x(2)  obj.x(1)  obj.x(4) obj.x(3);
-                             obj.x(1) -obj.x(2) -obj.x(3) obj.x(4)];
+            Hx = 2 *g* [     0         0         0        0 ;
+                        -obj.x(3)  obj.x(4) -obj.x(1) obj.x(2);
+                         obj.x(2)  obj.x(1)  obj.x(4) obj.x(3);
+                         obj.x(1) -obj.x(2) -obj.x(3) obj.x(4)];
             
+            Hx = [Hx zeros(4,6)];         
                          
             qdq= 1/2*[-q(2) -q(3) -q(4);
                        q(1) -q(4)  q(3);
@@ -58,10 +61,15 @@ classdef quaternionESKF < handle
             
             e = y - y_hat; %#ok<NOPRT>
             K = obj.P* H'*inv(H * obj.P * H' + obj.R); %#ok<MINV>
-            dx = K*(e - obj.dx);
+            dx = K*(e);
             obj.P = obj.P - K*H*obj.P;
             
-            obj.x(1:4) = quatmultiply(obj.x(1:4)', dx')';
+            dtheta = dx(1:3);
+            dtheta_norm = norm(dtheta);
+            dtheta_quat = [cos(dtheta_norm/2) ; (dtheta/dtheta_norm)*sin(dtheta_norm/2)];
+            
+            obj.x(1:4) = quatmultiply(obj.x(1:4)', dtheta_quat')';
+            obj.x(5:10)=obj.x(5:10)+dx(4:9);
             x = obj.x(1:4);
         end
     end

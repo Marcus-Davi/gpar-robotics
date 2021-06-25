@@ -3,10 +3,12 @@ addpath('./filtros', './movimentos')
 
 movimento_filename = '../../../datasets/simulation/movimento.csv';
 parado_filename = '../../../datasets/simulation/parado.csv';
+ground_truth_filename = '../../../datasets/simulation/ground_truth.csv';
 
 %% dados
 data = csvread(movimento_filename);
 calib_data = csvread(parado_filename);
+ground_truth = csvread(ground_truth_filename);
 
 acc = [data(:,1) data(:,2) data(:,3)];
 gyr = [data(:,4) data(:,5) data(:,6)];
@@ -36,75 +38,88 @@ angle_z = 0;
 
 % Ros data
 tftree = rostf;
-tformMOV = rosmessage('geometry_msgs/TransformStamped');
-tformMOV.ChildFrameId = 'EKF';
-tformMOV.Header.FrameId = 'map';
-tformMOV.Transform.Translation.X = 0;
-tformMOV.Transform.Translation.Y = 0;
-tformMOV.Transform.Translation.Z = 0;
-tformMOV.Transform.Rotation.W = 1;
-tformMOV.Transform.Rotation.X = 0;
-tformMOV.Transform.Rotation.Y = 0;
-tformMOV.Transform.Rotation.Z = 0;
+tform = rosmessage('geometry_msgs/TransformStamped');
+tform.ChildFrameId = 'true';
+tform.Header.FrameId = 'map';
+tform.Transform.Translation.X = 0;
+tform.Transform.Translation.Y = 0;
+tform.Transform.Translation.Z = 0;
+tform.Transform.Rotation.W = 1;
+tform.Transform.Rotation.X = 0;
+tform.Transform.Rotation.Y = 0;
+tform.Transform.Rotation.Z = 0;
 
-tformESKF = rosmessage('geometry_msgs/TransformStamped');
-tformESKF.ChildFrameId = 'ESKF';
-tformESKF.Header.FrameId = 'map';
-tformESKF.Transform.Translation.X = 0;
-tformESKF.Transform.Translation.Y = 0;
-tformESKF.Transform.Translation.Z = 0;
-tformESKF.Transform.Rotation.W = 1;
-tformESKF.Transform.Rotation.X = 0;
-tformESKF.Transform.Rotation.Y = 0;
-tformESKF.Transform.Rotation.Z = 0;
-
+tform2 = rosmessage('geometry_msgs/TransformStamped');
+tform2.ChildFrameId = 'imu';
+tform2.Header.FrameId = 'map';
+tform2.Transform.Translation.X = 0.5;
+tform2.Transform.Translation.Y = 0;
+tform2.Transform.Translation.Z = 0;
+tform2.Transform.Rotation.W = 1;
+tform2.Transform.Rotation.X = 0;
+tform2.Transform.Rotation.Y = 0;
+tform2.Transform.Rotation.Z = 0;
 
  %% Filtro de Kalman
 
-  vec_gyr_var = 1 * [ 1 var(gyr_calib)];
+  vec_gyr_var = 1 * [var(gyr_calib)];
   vec_acc_var  = 10* [ 1 var(acc_calib)];
-  vec_gyr_var(4) = 0.001;
+  vec_gyr_var(3) = 0.001;
   
   x = zeros(6,samples(1));
+  
+ quat_eskf = zeros(4,samples(1));
  eskf= quaternionESKF(dt,[0.001 0.001 0.001], vec_gyr_var, vec_acc_var);
  
  for i=1:samples
      %estimação da posição
      eskf.predict(gyr_calibrado(i,:)');
-     q_eskf = eskf.update(acc_calibrado(i,:)');
-     q_eskf_norm = q_eskf/norm(q_eskf);
+     if i>1
+        q_eskf = eskf.update(acc_calibrado(i,:)');
+        quat_eskf(:,i) = q_eskf;
      
-     %estimação da acc linear
-     acc_calibrado_global = quatmultiply(q_eskf_norm', [0, acc_calibrado(i,:)])';
-     acc_sgrav_global = acc_calibrado_global - [0;0;g];
-     
-     %dupla integração
-     x(1,i) = x(1,i-1) + x(2,i-1)*dt + acc_sgrav_global(2)*dt*dt/2;
-     x(2,i) = x(2,i-1) + acc_sgrav_global(2)*dt;
-     x(3,i) = x(3,i-1) + x(4,i-1)*dt + acc_sgrav_global(3)*dt*dt/2;
-     x(4,i) = x(4,i-1) + acc_sgrav_global(3)*dt;
-     x(5,i) = x(5,i-1) + x(6,i-1)*dt + acc_sgrav_global(4)*dt*dt/2;
-     x(6,i) = x(6,i-1) + acc_sgrav_global(4)*dt;
-     
-    tformMOV.Transform.Translation.X = x(1,i);
-    tformMOV.Transform.Translation.Y = x(3,i);
-    tformMOV.Transform.Translation.Z = x(5,i);
-    tformMOV.Transform.Rotation.W = q_eskf_norm(1);
-    tformMOV.Transform.Rotation.X = q_eskf_norm(2);
-    tformMOV.Transform.Rotation.Y = q_eskf_norm(3);
-    tformMOV.Transform.Rotation.Z = q_eskf_norm(4);
-    tformMOV.Header.Stamp = rostime('now');
-    sendTransform(tftree,tformMOV);
-    
-    tformESKF.Transform.Rotation.W = q_eskf_norm(1);
-    tformESKF.Transform.Rotation.X = q_eskf_norm(2);
-    tformESKF.Transform.Rotation.Y = q_eskf_norm(3);
-    tformESKF.Transform.Rotation.Z = q_eskf_norm(4);
-    tformESKF.Header.Stamp = rostime('now');
-    sendTransform(tftree,tformESKF);
-    
+        q_eskf_norm = q_eskf/norm(q_eskf);   
+        tform.Transform.Rotation.W = ground_truth(1);
+        tform.Transform.Rotation.X = ground_truth(2);
+        tform.Transform.Rotation.Y = ground_truth(3);
+        tform.Transform.Rotation.Z = ground_truth(4);
+        tform.Header.Stamp = rostime('now');
+        sendTransform(tftree,tform);
+
+        tform2.Transform.Rotation.W = q_eskf_norm(1);
+        tform2.Transform.Rotation.X = q_eskf_norm(2);
+        tform2.Transform.Rotation.Y = q_eskf_norm(3);
+        tform2.Transform.Rotation.Z = q_eskf_norm(4);
+        tform2.Header.Stamp = rostime('now');
+        sendTransform(tftree,tform2);
+    end
     
     pause(dt)
 
  end
- %%
+ 
+ %% plot
+ euler = quat2eul(quat_eskf', 'XYZ');
+ euler_true = quat2eul(ground_truth, 'XYZ');
+ 
+subplot(3,1,1)
+plot(euler(:,1),'--')
+hold on
+plot(euler_true(:,1))
+legend('roll','true roll')
+
+subplot(3,1,2)
+plot(euler(:,2),'--')
+hold on
+plot(euler_true(:,2))
+legend('pitch','true pitch')
+
+subplot(3,1,3)
+plot(euler(:,3),'--')
+hold on
+plot(euler_true(:,3))
+legend('yaw','true yaw')
+
+ 
+ 
+ 

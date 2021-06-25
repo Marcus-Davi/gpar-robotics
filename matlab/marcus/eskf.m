@@ -1,4 +1,4 @@
-%clear;close all;clc
+ %clear;close all;clc
 % leitura do dataset
 
 %verificar os dados gerados pelo script
@@ -136,7 +136,7 @@ for i = 1 : samples
         deltaRot = dX(1:3);
         deltaRotNorm = norm(deltaRot);
         deltaRotQuat = [cos(deltaRotNorm/2);
-            (deltaRot/deltaRotNorm)*sin(deltaRotNorm)/2];
+            (deltaRot/deltaRotNorm)*sin(deltaRotNorm/2)];
         
         
         
