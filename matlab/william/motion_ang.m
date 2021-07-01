@@ -3,7 +3,7 @@ Esse programa vai trabalhar só com a questão da velocidade angular, fazer
 outro para caso eu deseje trabalhar com a linear.
 
 %}
-function [orientation angVel roll pitch yaw] = motion_ang(N);
+function [orientation angVel acc_linear roll pitch yaw] = motion_ang(N);
 
 %% Definição de variáveis
 Fs = 100; % frequência Hz
@@ -27,16 +27,25 @@ vel_roll = zeros(N,1);
 vel_pitch = zeros(N,1);
 vel_yaw = zeros(N,1);
 
+% Acelerações Lineares
+accx = zeros(N,1);
+accy = zeros(N,1);
+accz = zeros(N,1);
+
 w = 2; % frequência angular (rad/s), usada em sinais senoidais
 %% Definindo sinais usados
 for i=1:N
-    if(i <= 473)
-    pitch(i) = (pi/2)*sin(w*t(i));
-    vel_pitch(i) =(pi/2)*w*cos(w*t(i));
+    if(i <= N/2)
+    pitch(i) = 0;
+    vel_pitch(i) = 0 ;
     else
-    roll(i) = (pi/2)*sin(w*t(i));
-    vel_roll(i) = (pi/2)*w*cos(w*t(i));
+    roll(i) = 0;
+    vel_roll(i) = 0;
     end
+    
+    accx(i) = 2;
+    accy(i) = 2;
+    
 end
 %% Retorno
 
@@ -44,4 +53,6 @@ angVel = [vel_roll vel_pitch vel_yaw];
 
 rotvec = [roll pitch yaw];
 orientation = quaternion(rotvec,'rotvec');
+
+acc_linear = [accx accy accz];
 end

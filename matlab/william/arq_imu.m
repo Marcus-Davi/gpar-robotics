@@ -8,9 +8,9 @@ function [accx accy accz gyrox gyroy gyroz] = arq_imu(escolha);
     addpath('./movimentos');
     
     if(escolha == 1)
-        [accx ,accy , accz , gyrox , gyroy , gyroz] = imu(1000,0);
+        [velo_truth,posi_truth,accx ,accy , accz , gyrox , gyroy , gyroz] = imu(1000,0);
     elseif (escolha == 2)
-        [accx ,accy , accz , gyrox , gyroy , gyroz] = imu(1000,1);
+        [velo_truth,posi_truth,accx ,accy , accz , gyrox , gyroy , gyroz] = imu(1000,1);
     end
     
     if(escolha == 1 || escolha == 2)
@@ -21,8 +21,8 @@ function [accx accy accz gyrox gyroy gyroz] = arq_imu(escolha);
     
     csvwrite(nome,matriz_mpu)
     else
-       %nome = input('Digite o nome do arquivo que deseja ler: ','s');
-       nome = "parado_imu";
+       nome = input('Digite o nome do arquivo que deseja ler: ','s');
+       %nome = "parado_imu";
        nome = strcat(nome,'.csv');
         
        data = csvread(nome);

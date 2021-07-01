@@ -1,4 +1,4 @@
-function mpu_comp_ros(ROS_MASTER_IP,TOPIC)
+function [accx, accy, accz, gyrox, gyroy, gyroz] = mpu_ros(ROS_MASTER_IP,TOPIC)
 %% SETUP
 rosshutdown;
 clc;
@@ -7,16 +7,19 @@ rosinit(ROS_MASTER_IP)
 sub = rossubscriber(TOPIC);
 msg = rosmessage(sub);
 
-while(1)
+i = 1;
+
+while(i<=1000)
    msg = receive(sub);
    %% Aquisição de dados
-   accx = msg.LinearAcceleration.X ;
-   accy = msg.LinearAcceleration.Y ;
-   accz = msg.LinearAcceleration.Z ;
+   accx(i) = msg.LinearAcceleration.X ;
+   accy(i) = msg.LinearAcceleration.Y ;
+   accz(i) = msg.LinearAcceleration.Z ;
    
-   gyrox(2) = msg.AngularVelocity.X ;
-   gyroy(2) = msg.AngularVelocity.Y ;
-   gyroz(2) = msg.AngularVelocity.Z ;
+   gyrox(i) = msg.AngularVelocity.X ;
+   gyroy(i) = msg.AngularVelocity.Y ;
+   gyroz(i) = msg.AngularVelocity.Z ;
      
+   i = i + 1
 end
 end

@@ -1,31 +1,28 @@
+% Gravidade
 % Error State Kalman Filter Quaternion
-
-function [output] = eskf(graph)
 
 %% Leitura
 clc;
-movimento_filename = '../../datasets/simulation/movimento.csv';
-parado_filename = '../../datasets/simulation/parado.csv';
-ground_truth_filename = '../../datasets/simulation/ground_truth.csv';
+movimento_filename = './movimentos/linear2_test_imu.csv';
+parado_filename = './movimentos/parado_imu.csv';
 
 data = csvread(movimento_filename);
 calib = csvread(parado_filename);
-ground_truth = csvread(ground_truth_filename);
 
-       accx = data(:,1);
-       accy = data(:,2);
-       accz = data(:,3);
+       accx = data(:,4);
+       accy = data(:,5);
+       accz = data(:,6);
 
-       gyrox = data(:,4);
-       gyroy = data(:,5);
-       gyroz = data(:,6); 
+       gyrox = data(:,1);
+       gyroy = data(:,2);
+       gyroz = data(:,3); 
 
 tam = length(gyrox);
 
 %% Calibração
        
-calib_acc = [calib(:,1) calib(:,2) calib(:,3)];
-calib_gyro = [calib(:,4) calib(:,5) calib(:,6)];
+calib_acc = [calib(:,4) calib(:,5) calib(:,6)];
+calib_gyro = [calib(:,1) calib(:,2) calib(:,3)];
 
 mean_calib_acc = mean(calib_acc);
 mean_calib_gyro = mean(calib_gyro);
@@ -42,7 +39,7 @@ gyroz = gyroz - mean_calib_gyro(1,3);
 x = [1 0 0 0 0 0 0]; % Nominal State [q wb]
 dx = [0 0 0 0 0 0]; %Error State [dangle dwb]
 
-dt = 1/400; 
+dt = 1/100; 
 g = 9.8;
 
 F = eye(6);
@@ -92,7 +89,7 @@ for i=1:tam
       
      y_ = g*[2*q1*q3-2*q0*q2
              2*q0*q1+2*q2*q3
-             q0^2-q1^2-q2^2+q3^2];
+             q0^2-q1^2-q2^2+q3^2]
          
      y = [accx(i) accy(i) accz(i)]';
     
@@ -130,27 +127,15 @@ for i=1:tam
     output(i,1) = normalize(quaternion(x(1),x(2),x(3),x(4)));
 end
 
-%% Visualization
-if(graph == 1)
+[q0,q1,q2,q3] = parts(output);
+
 euler_eskf = quat2eul(output,'XYZ');
-euler_true = quat2eul(ground_truth,'XYZ');
 
-subplot(3,1,1)
-plot(euler_eskf(:,1),'--');
-hold on;
-plot(euler_true(:,1));
-legend('roll','true roll');
+g_x = 9.81.*(2.*q1.*q3-2.*q0.*q2);
+g_y = 9.81.*(2.*q0.*q1+2.*q2.*q3);
+g_z = 9.81.*( q0.^2-q1.^2-q2.^2+q3.^2);
 
-subplot(3,1,2)
-plot(euler_eskf(:,2),'--');
-hold on;
-plot(euler_true(:,2));
-legend('pitch','true pitch');
+g_turned =[g_x g_y g_z];
 
-subplot(3,1,3)
-plot(euler_eskf(:,3),'--');
-hold on;
-plot(euler_true(:,3));
-legend('yaw','true yaw');
-end
-end
+
+
