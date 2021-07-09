@@ -9,48 +9,44 @@
 
 
 % achei melhor puxar direto da pasta
-movimento_filename = '../../datasets/simulation/movimento.csv';
-parado_filename = '../../datasets/simulation/parado.csv';
-ground_truth_filename = '../../datasets/simulation/ground_truth.csv';
-
-
-
+movimento_filename = '../../datasets/rosbags/street_imu.csv';
 data = csvread(movimento_filename);
-calib_data = csvread(parado_filename);
-ground_truth = csvread(ground_truth_filename);
+% calib_data = csvread(parado_filename);
+% ground_truth = csvread(ground_truth_filename);
 
 acc = [data(:,1) data(:,2) data(:,3)];
 gyr = [data(:,4) data(:,5) data(:,6)];
 
 %dados obtidos com sensor inerte
-acc_calib = [calib_data(:,1) calib_data(:,2) calib_data(:,3)];
-gyr_calib = [calib_data(:,4) calib_data(:,5) calib_data(:,6)];
-
-acc_caluib_mean = mean(acc_calib);
-gyr_calib_mean = mean(gyr_calib); %bias
+% acc_calib = [calib_data(:,1) calib_data(:,2) calib_data(:,3)];
+% gyr_calib = [calib_data(:,4) calib_data(:,5) calib_data(:,6)];
+% 
+% acc_caluib_mean = mean(acc_calib);
+% gyr_calib_mean = mean(gyr_calib); %bias
 
 % gyr_calib_mean(3) = -0.05; % bias artificia
 % gyr_calib_mean(2) = -0.05; % bias artificial
 % gyr_calib_mean(1) = -0.05; % bias artificial
 
-gyr_calibrado = gyr- gyr_calib_mean; %remove bias
+
+gyr_calibrado = gyr;
 acc_calibrado = acc;
 
 
 %% Modelo
-freq = 400; % precisa ser o mesmo do gera_dados.m
+freq = 100; % precisa ser o mesmo do gera_dados.m
 Ts = 1/freq;
 g = [0 0 9.81]'; % gravidade "errada" pra reduzir instabilidade
 samples = length(data);
 
 %% Kalman1
 % Parametros Kalman
-Qn_gyr = Ts^2*diag(var(gyr_calib));
+Qn_gyr = Ts^2*diag([0.01 0.01 0.01]);
 Qn_bias = Ts*diag([0.001 0.001 0.001]);
 Qn = blkdiag(Qn_gyr,Qn_bias);
 % Qn(4,4) = 0.00001; % variancia no eixo z menor para "confiarmos" mais na medida do gyro
 
-Rn = 1*diag(var(acc_calib));
+Rn = 1*diag([0.1 0.1 0.1]);
 % Rn(4,4) = 1;
 
 Pk = zeros(6);
@@ -127,7 +123,7 @@ for i = 1 : samples
         
         H = [Hx*Hdx zeros(3)];
         
-        Kk = Pk*H'*inv(H*Pk*H' + Rn)
+        Kk = Pk*H'*inv(H*Pk*H' + Rn);
         
         a_est = quatrotate(x',g')'; %nav2body
         
@@ -153,28 +149,17 @@ for i = 1 : samples
     X_GYRO(i,:) = x_pure_gyro;
 end
 euler = quat2eul(X,'XYZ');
-euler_true = quat2eul(ground_truth,'XYZ');
 
 subplot(3,1,1)
 plot(euler(:,1),'--')
-hold on
-plot(euler_true(:,1))
-legend('roll','true roll')
-
 subplot(3,1,2)
 plot(euler(:,2),'--')
-hold on
-plot(euler_true(:,2))
-legend('pitch','true pitch')
-
 subplot(3,1,3)
 plot(euler(:,3),'--')
-hold on
-plot(euler_true(:,3))
-legend('yaw','true yaw')
 
 
-return
+
+% return
 %% Visualization
 for i = 1 : samples
     x = X(i,:);
