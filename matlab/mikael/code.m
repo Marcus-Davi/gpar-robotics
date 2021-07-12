@@ -25,3 +25,19 @@ gyr_calib_mean = mean(gyr_calib); %bias
 
 gyr_calibrado = gyr - gyr_calib_mean; %remove bias
 acc_calibrado = acc;
+
+%% Calculos
+% alfa - roll, beta - pitch, gama - yaw
+syms alfa beta gama
+Ra = [  1       0       0; 
+        0   cos(alfa)   -sin(alfa); 
+        0   sin(alfa)   cos(alfa)]
+Rb = [  cos(beta)   0           sin(beta);
+        1           0           0;
+        0           sin(beta)   cos(beta)]
+    
+Rc = [  cos(alfa)   -sin(alfa)  0; 
+        sin(alfa)   cos(alfa)   0;
+        0           0           1; ]
+
+teta = acc_calibrado(:,1)./acc_calibrado(:,2);
