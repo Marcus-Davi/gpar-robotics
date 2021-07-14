@@ -59,8 +59,11 @@ classdef quaternionESKF < handle
             Hdx = blkdiag(qdq, eye(3), eye(3));
             H = Hx*Hdx;
             
-            e = y - y_hat; %#ok<NOPRT>
-            K = obj.P* H'*inv(H * obj.P * H' + obj.R) %#ok<MINV>
+            Rn = exp(norm(g_measured - obj.x(8:10))/0.5)*obj.R;
+            
+            e = y - y_hat; %#ok<NOPRT> 
+            K = obj.P* H'*inv(H * obj.P * H' + obj.R); %#ok<MINV>
+%             K = obj.P* H'*inv(H * obj.P * H' + Rn);
             dx = K*(e);
             obj.P = obj.P - K*H*obj.P;
             
