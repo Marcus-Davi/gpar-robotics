@@ -36,7 +36,7 @@ acc_calibrado = acc;
 %% Modelo
 freq = 100; % precisa ser o mesmo do gera_dados.m
 Ts = 1/freq;
-g = [0 0 9.81]'; % gravidade "errada" pra reduzir instabilidade
+g = [0 0 1]'; % gravidade "errada" pra reduzir instabilidade
 samples = length(data);
 
 %% Kalman1
@@ -46,7 +46,7 @@ Qn_bias = Ts*diag([0.001 0.001 0.001]);
 Qn = blkdiag(Qn_gyr,Qn_bias);
 % Qn(4,4) = 0.00001; % variancia no eixo z menor para "confiarmos" mais na medida do gyro
 
-Rn = 1*diag([0.1 0.1 0.1]);
+Rn = 1*diag([0.3 0.3 0.3]);
 % Rn(4,4) = 1;
 
 Pk = zeros(6);
@@ -136,8 +136,8 @@ for i = 1 : samples
         
         
         
-        x = quatmultiply(x',deltaRotQuat')';
-        w_bias = w_bias + dX(4:end);
+%         x = quatmultiply(x',deltaRotQuat')';
+%         w_bias = w_bias + dX(4:end);
         
         Pk = (eye(6) - Kk*H)*Pk;
         
@@ -159,7 +159,7 @@ plot(euler(:,3),'--')
 
 
 
-% return
+return
 %% Visualization
 for i = 1 : samples
     x = X(i,:);
