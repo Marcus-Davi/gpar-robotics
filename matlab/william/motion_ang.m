@@ -1,8 +1,10 @@
 %{
 Esse programa vai trabalhar só com a questão da velocidade angular, fazer
 outro para caso eu deseje trabalhar com a linear.
-
 %}
+
+% Usado na classe IMU do matlab. Ainda relevante para o GPAR, mas vou
+% juntar com o outro programa
 function [orientation angVel acc_linear roll pitch yaw] = motion_ang(N);
 
 %% Definição de variáveis
@@ -38,14 +40,12 @@ for i=1:N
     if(i <= N/2)
     pitch(i) = 0;
     vel_pitch(i) = 0 ;
+    yaw(i) = 0.5*cos((2*pi/N))*i);
+    vel_yaw(i) = -(pi/N)*sin((2*pi/N)*i);
     else
     roll(i) = 0;
     vel_roll(i) = 0;
-    end
-    
-    accx(i) = 2;
-    accy(i) = 2;
-    
+    end  
 end
 %% Retorno
 

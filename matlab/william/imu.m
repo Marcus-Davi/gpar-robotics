@@ -23,9 +23,9 @@ BiasInstability Accelerometer:
 RandomWalk Accelerometer: 
 ---------------------------------------------
 %} 
-function [velo_truth,posi_truth,accx ,accy , accz , gyrox , gyroy , gyroz] = imu(N,i);
-% Para i = 1 trabalhamos com algum movimento, para diferente de 1
-% consideramos movimento nulo
+
+%% SETUP
+clear;clc;
 
 gyro_p = gyroparams( ...
             'MeasurementRange',4.3633, ...
@@ -35,7 +35,7 @@ gyro_p = gyroparams( ...
             'NoiseDensity',8.7266e-4, ...
             'BiasInstability',0.05, ...
             'TemperatureScaleFactor',0.02,...
-            'TemperatureBias',0.349,...
+            'TemperatureBias',0.0349,...
             'AccelerationBias',0.178e-3);
 
 accel_p = accelparams( ...
@@ -52,39 +52,53 @@ IMU = imuSensor('accel-gyro');
 IMU.Gyroscope = gyro_p;
 IMU.Accelerometer = accel_p;
 
-if(i == 1)
-[orientation angVel acc_linear roll pitch yaw] = motion_ang(N);
+%% VARIABLES
+Fs = 100; % frequência Hz
+N = 1000; %N --> amostras
 
-velo_truth = zeros(N,1);
-posi_truth = zeros(N,1);
+t = (0:(1/Fs):(N - 1)/Fs)';
+%{
+Explicação sobre a estrutura do tempo.
+Começamos do tempo 0s
+O tempo final será a quantidade de amostras - 1 * o tempo por amostra, esse
+tempo é 1/Fs. E logo esse 1/Fs também será o incremento do meu vetor tempo.
+E por fim, ele está transposto para termos um vetor (N,1)
+%}
 
-dt = 1/100;
+roll = zeros(N,1); pitch = zeros(N,1); yaw = zeros(N,1);
+vel_roll = zeros(N,1); vel_pitch = zeros(N,1); vel_yaw = zeros(N,1);
 
-for i = 2:N
-  velo_truth(i) = velo_truth(i-1) + (acc_linear(i,1)+acc_linear(i-1,1))*dt/2;  
-  posi_truth(i) = posi_truth(i-1) + (velo_truth(i)+velo_truth(i-1))*dt/2;  
+% Acelerações Lineares
+accx = zeros(N,1); accy = zeros(N,1); accz = zeros(N,1);
+
+%% BUILDING THE SIGNAL
+for i=1:N
+    pitch(i) = (pi/2)*sin((2*pi/N)*i);
+    vel_pitch(i) = (pi^2/N)*sin((2*pi/N)*i); 
 end
+
+angVel = [vel_roll vel_pitch vel_yaw];
+rotvec = [roll pitch yaw];
+orientation = quaternion(rotvec,'rotvec');
+acc_linear = [accx accy accz];
 
 [accelReadings , gyroReadings] = IMU(acc_linear,angVel,orientation);
 
-else
-    velo_truth = zeros(N,1);
-    posi_truth = zeros(N,1);
-    angVel = zeros(N,3);
-    acc_linear = zeros(N,3);
-    
-    [accelReadings , gyroReadings] = IMU(acc_linear,angVel);
-end
+accx = accelReadings(:,1); accy = accelReadings(:,2); accz = accelReadings(:,3);
+gyrox = gyroReadings(:,1); gyroy = gyroReadings(:,2); gyroz = gyroReadings(:,3);
 
-accx = accelReadings(:,1);
-accy = accelReadings(:,2);
-accz = accelReadings(:,3);
+acc = [accx accy accz];
+gyro = [gyrox gyroy gyroz];
 
-gyrox = gyroReadings(:,1);
-gyroy = gyroReadings(:,2);
-gyroz = gyroReadings(:,3);
+%% SAVING THE DATA
 
-end
+file_data_name = './data/movement_imu.csv';
+file_truth_name = './data/true_movement_imu.csv';
 
-            
+movement = [acc gyro];
+[q0 q1 q2 q3] = parts(orientation);
+ground_truth = [q0 q1 q2 q3];
+
+csvwrite(file_data_name,movement);
+csvwrite(file_truth_name,ground_truth);
 

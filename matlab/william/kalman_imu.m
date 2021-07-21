@@ -39,30 +39,49 @@ calcular a variância delas.
 
 var = [var_w_roll 0;0 var_w_pitch];
 %}
-function [k_roll,k_pitch] = kalman_imu();
+
 %% SETUP
 clc;
-    display('1.Movimento 2.Calibration');
-    [accx accy accz gyrox gyroy gyroz] = arq_imu(0);
-    [accx_0 accy_0 accz_0 gyrox_0 gyroy_0 gyroz_0] = imu_calibration();
+motion_filename = './data/movement_roll.csv';
+stationary_filename = './data/stationary.csv';
+
+data = csvread(motion_filename);
+calib = csvread(stationary_filename);
 
 f = 100; %Hz
-T = 1/f;
+dt = 1/f;
+
+% Accelerometer Data
+accx = data(:,1);
+accy = data(:,2);
+accz = data(:,3);
+
+% Gyroscope Data
+gyrox = data(:,4);
+gyroy = data(:,5);
+gyroz = data(:,6);
+
 tam = length(accx);
 
 pitch = zeros(tam,1);
 roll = zeros(tam,1);
 
-%% BIAS
+%% CALIBRATION
+calib_acc = [calib(:,1) calib(:,2) calib(:,3)];
+calib_gyro = [calib(:,4) calib(:,5) calib(:,6)];
 
-accx = accx + accx_0;
-accy = accy + accy_0;
-accz = accz + accz_0;
+mean_calib_acc = mean(calib_acc);
+mean_calib_gyro = mean(calib_gyro);
 
-gyrox = gyrox + gyrox_0;
-gyroy = gyroy + gyroy_0;
-gyroz = gyroz + gyroz_0;
+%%{
+accx = accx - mean_calib_acc(1,1);
+accy = accy - mean_calib_acc(1,2);
+accz = accz - (9.8 - mean_calib_acc(1,3));
 
+gyrox = gyrox - mean_calib_gyro(1,1);
+gyroy = gyroy - mean_calib_gyro(1,2);
+gyroz = gyroz - mean_calib_gyro(1,3);
+%}
 %% MEASUREMENT
 
 pitch = -atan2(accx,sqrt(accz.*accz+accy.*accy)); 
@@ -91,21 +110,27 @@ H --> 2x4
 
 R --> 2x2
 %}
-A = [1 -T 0 0;0 1 0 0; 0 0 1 -T;0 0 0 1];
-B = [T 0;0 0;0 T;0 0];
+A = [1 -dt 0 0;0 1 0 0; 0 0 1 -dt;0 0 0 1];
+B = [dt 0;0 0;0 dt;0 0];
 
-var_q = [0.0035 0;0 0.0037];
+%var_q = [0.0035 0;0 0.0037];
+var_gyro = var(calib_gyro);
+var_q = [var_gyro(1) 0;0 var_gyro(2)]; 
+
 Q = B*var_q*B';
 
 H = [1 0 0 0;0 0 1 0];
-R = [0.0075 0;0 0.0071];
+var_acc = var(calib_acc);
+var_r = [var_acc(1) 0;0 var_acc(2)];
+%R = [0.0075 0;0 0.0071];
+R = var_r;
 
 %% VARIABLES
-x = [0;0;0;0];
-u = [0;0];
+x = [0 0 0 0]';
+u = [0 0]';
 P = eye(4); %Inicialização da matriz de covariância.
-x_m = [0;0;0;0];
-z = [0;0];
+x_m = [0 0 0 0]';
+z = [0 0]';
 
 k_pitch = zeros(tam,1);
 k_roll = zeros(tam,1);
@@ -117,7 +142,7 @@ k_roll = zeros(tam,1);
 %% KALMAN FILTER
 for i=1:tam
 %Prediction
-    u = [gyrox(i);gyroy(i)]; 
+    u = [gyrox(i) gyroy(i)]'; 
     x_ = A*x + B*u;
     P_ = A*P*A' + Q;
 % Measurement
@@ -132,4 +157,11 @@ for i=1:tam
     k_roll(i) = x(1,1);
 end
 
-end
+%% PLOTING
+    subplot(2,1,1);
+    plot(k_roll,'--');
+    title('ROLL');
+    
+    subplot(2,1,2);
+    plot(k_pitch,'--');
+    title('PITCH');
