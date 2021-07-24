@@ -1,4 +1,4 @@
- %clear;close all;clc
+ ;close all;clc
 % leitura do dataset
 
 %verificar os dados gerados pelo script
@@ -127,7 +127,7 @@ for i = 1 : samples
         
         H = [Hx*Hdx zeros(3)];
         
-        Kk = Pk*H'*inv(H*Pk*H' + Rn)
+        Kk = Pk*H'*inv(H*Pk*H' + Rn);
         
         a_est = quatrotate(x',g')'; %nav2body
         

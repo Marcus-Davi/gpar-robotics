@@ -1,4 +1,4 @@
- %clear;close all;clc
+close all;clc
 % leitura do dataset
 
 %verificar os dados gerados pelo script
@@ -20,7 +20,7 @@ gyr = [data(:,4) data(:,5) data(:,6)];
 %dados obtidos com sensor inerte
 % acc_calib = [calib_data(:,1) calib_data(:,2) calib_data(:,3)];
 % gyr_calib = [calib_data(:,4) calib_data(:,5) calib_data(:,6)];
-% 
+%
 % acc_caluib_mean = mean(acc_calib);
 % gyr_calib_mean = mean(gyr_calib); %bias
 
@@ -36,24 +36,121 @@ acc_calibrado = acc;
 %% Modelo
 freq = 100; % precisa ser o mesmo do gera_dados.m
 Ts = 1/freq;
-g = [0 0 1]'; % gravidade "errada" pra reduzir instabilidade
 samples = length(data);
 
 %% Kalman1
 % Parametros Kalman
-Qn_gyr = Ts^2*diag([0.01 0.01 0.01]);
-Qn_bias = Ts*diag([0.001 0.001 0.001]);
-Qn = blkdiag(Qn_gyr,Qn_bias);
+Qn_gyr = Ts^2*diag([0.005 0.005 0.005]); %output noise density = 0.3 º/s (rms) @ 47 Hz
+Qn_acc_bias = Ts*diag([1e-8 1e-8 1e-8]); % ?
+Qn_gyr_bias = Ts*diag([1e-8 1e-8 1e-8]); % ?
+Qn_grav = zeros(3);
+Qn = blkdiag(Qn_gyr,Qn_acc_bias,Qn_gyr_bias,Qn_grav);
+
 % Qn(4,4) = 0.00001; % variancia no eixo z menor para "confiarmos" mais na medida do gyro
 
-Rn = 1*diag([0.3 0.3 0.3]);
+Rn = 1*diag([0.1 0.1 0.1]); % acc (measurement)
 % Rn(4,4) = 1;
 
-Pk = zeros(6);
+Pk = zeros(12);
 
-x = [1 0 0 0]'; %fusion
 x_pure_gyro = [1 0 0 0]'; %gyro only
-%% ROS
+
+%% Loop
+%stados -> quaternion, a_bias , w_bias, gravity
+X = zeros(samples,4);
+X_GYRO = zeros(samples,4);
+
+quat = [1 0 0 0]'; %fusion
+gravity = [0 0 0.81]';
+w_bias = [0 0 0]';
+a_bias = [0 0 0]';
+for i = 1 : samples
+    
+    w_measure = [gyr_calibrado(i,1) gyr_calibrado(i,2) gyr_calibrado(i,3)]'; %quaterniana
+    a_measure = [acc_calibrado(i,1) acc_calibrado(i,2) acc_calibrado(i,3)]';
+    
+    % Propagation / Predict
+    w_compensated = w_measure - w_bias;
+    a_compensated = a_measure - a_bias;
+    
+    x_delta = getQuatDelta(w_compensated*Ts);
+    
+    quat = quatmultiply(quat',x_delta')';
+    a_bias = a_bias;
+    w_bias = w_bias;
+    gravity = gravity;
+    
+    
+    Jf = [quat2rotm(x_delta')' zeros(3) -Ts*eye(3) zeros(3);
+        zeros(3) eye(3) zeros(3) zeros(3);
+        zeros(3) zeros(3) eye(3) zeros(3);
+        zeros(3) zeros(3) zeros(3) eye(3)]
+    Pk = Jf*Pk*Jf' + Qn;
+    
+    if i > 1
+        %jacobiana da medida em relação ao erro
+        % H = d h(x)/ dx * dx / d(deltax)
+        Hx = 2*gravity(3)*[-quat(3) quat(4) -quat(1) quat(2);
+            quat(2) quat(1) quat(4) quat(3);
+            quat(1) -quat(2) -quat(3) quat(4)];
+        
+        Hx_g = [0 0 quat(2)*quat(4)-quat(1)*quat(3);
+            0 0 quat(3)*quat(4)+quat(1)*quat(2);
+            0 0 quat(4)*quat(4)-quat(3)*quat(3)-quat(2)*quat(2)+quat(1)*quat(1)];
+        
+        Hx = [Hx zeros(3) zeros(3) Hx_g];
+        
+        Hdx = 1/2 * [-quat(2) -quat(3) -quat(4);
+            quat(1) -quat(4) quat(3);
+            quat(4) quat(1) -quat(2);
+            -quat(3) quat(2) quat(1)];
+        
+        Hdx = blkdiag(Hdx,eye(9));
+        
+        Hxdx = Hx*Hdx;
+        
+        Kk = Pk*Hxdx'*inv(Hxdx*Pk*Hxdx' + Rn);
+        
+        a_est = quatrotate(quat',gravity')'; %nav2body
+        
+        dX = Kk*(a_compensated - a_est);
+        
+        % compose error states
+        deltaRot = dX(1:3);
+        deltaABias = dX(4:6);
+        deltaGBias = dX(7:9);
+        deltaGrav = dX(10:12);    
+        deltaRotQuat = getQuatDelta(deltaRot);
+           
+        % BOX SUM
+        quat = quatmultiply(quat',deltaRotQuat')';
+        a_bias = a_bias + deltaABias;
+        w_bias = w_bias + deltaGBias;
+        gravity = gravity + deltaGrav;
+        
+        Pk = (eye(12) - Kk*Hxdx)*Pk;
+        
+    end
+    
+    
+    % acumuladores
+    X(i,:) = quat;
+    X_GYRO(i,:) = x_pure_gyro;
+end
+euler = quat2eul(X,'XYZ');
+
+subplot(3,1,1)
+plot(euler(:,1),'--')
+subplot(3,1,2)
+plot(euler(:,2),'--')
+subplot(3,1,3)
+plot(euler(:,3),'--')
+
+
+
+% return
+%% Visualization
+% ROS
 rosshutdown % desligar antes
 rosinit % roscore
 
@@ -86,93 +183,18 @@ tform2.Transform.Rotation.Z = 0;
 
 
 
-
-
-%% Loop
-
-X = zeros(samples,4);
-X_GYRO = zeros(samples,4);
-
-w_bias = [0 0 0]';
 for i = 1 : samples
-    w_measure = [gyr_calibrado(i,1) gyr_calibrado(i,2) gyr_calibrado(i,3)]'; %quaterniana
-    a_measure = [acc_calibrado(i,1) acc_calibrado(i,2) acc_calibrado(i,3)]';
-    
-    % predict
-    uk = [0; w_measure - w_bias]';
-    x = (x' + (Ts/2)*quatmultiply(x', uk))';%Assume calibrado (bias constante) %-Ts/2 *quatmultiply(q_k,[0 bias]);
-    w_bias = w_bias;
-    
-    
- 
-    Jf = [quat2rotm(uk*Ts) -Ts*eye(3);
-        zeros(3) eye(3)];
-    Pk = Jf*Pk*Jf' + Qn;
-    
-    if i > 1
-        %jacobiana da medida em relação ao erro
-        % H = d h(x)/ dx * dx / d(deltax)
-        Hx = 2*g(3)*[-x(3) x(4) -x(1) x(2);
-            x(2) x(1) x(4) x(3);
-            x(1) -x(2) -x(3) x(4)];
-        
-        Hdx = 1/2 * [-x(2) -x(3) -x(4);
-            x(1) -x(4) x(3);
-            x(4) x(1) -x(2);
-            -x(3) x(2) x(1)];
-        
-        H = [Hx*Hdx zeros(3)];
-        
-        Kk = Pk*H'*inv(H*Pk*H' + Rn);
-        
-        a_est = quatrotate(x',g')'; %nav2body
-        
-        dX = Kk*(a_measure - a_est);
-
-        deltaRot = dX(1:3);
-        deltaRotNorm = norm(deltaRot);
-        deltaRotQuat = [cos(deltaRotNorm/2);
-            (deltaRot/deltaRotNorm)*sin(deltaRotNorm/2)];
-        
-        
-        
-%         x = quatmultiply(x',deltaRotQuat')';
-%         w_bias = w_bias + dX(4:end);
-        
-        Pk = (eye(6) - Kk*H)*Pk;
-        
-    end
-    
-    
-    % acumuladores
-    X(i,:) = x;
-    X_GYRO(i,:) = x_pure_gyro;
-end
-euler = quat2eul(X,'XYZ');
-
-subplot(3,1,1)
-plot(euler(:,1),'--')
-subplot(3,1,2)
-plot(euler(:,2),'--')
-subplot(3,1,3)
-plot(euler(:,3),'--')
-
-
-
-return
-%% Visualization
-for i = 1 : samples
-    x = X(i,:);
+    quat = X(i,:);
     x_pure_gyro = X_GYRO(i,:);
     
-    x = quatnormalize(x);
+    quat = quatnormalize(quat);
     x_pure_gyro = quatnormalize(x_pure_gyro);
     
     
-    tform.Transform.Rotation.W = x(1);
-    tform.Transform.Rotation.X = x(2);
-    tform.Transform.Rotation.Y = x(3);
-    tform.Transform.Rotation.Z = x(4);
+    tform.Transform.Rotation.W = quat(1);
+    tform.Transform.Rotation.X = quat(2);
+    tform.Transform.Rotation.Y = quat(3);
+    tform.Transform.Rotation.Z = quat(4);
     tform.Header.Stamp = rostime('now');
     sendTransform(tftree,tform);
     
@@ -184,9 +206,17 @@ for i = 1 : samples
     tform2.Header.Stamp = rostime('now');
     sendTransform(tftree,tform2);
     
-    pause(Ts)
+    %     pause(Ts)
     i
     
 end
 
+
+function y = getQuatDelta(angles)
+angles_norm = norm(angles);
+u = cos(angles_norm/2);
+v = (angles / angles_norm) * sin(angles_norm/2);
+v = reshape(v,3,1);
+y = [u;v];
+end
 
