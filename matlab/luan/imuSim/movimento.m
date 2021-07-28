@@ -22,15 +22,15 @@ gyr_calibrado = gyr;% - mean(gyr_calib); % não calibra pra vermos o efeito da f
 acc_calibrado = acc;% - mean(acc_calib);
 
 %% modelo
-f = 400; %Hz
+f = 100; %Hz
 dt = 1/f;
 g = 9.8056;
 samples = size(acc(:,1));
  
   %% ROS
- rosshutdown
- rosinit
- nome = strcat('pitch_imu','.csv');
+ %rosshutdown
+ %rosinit
+ %nome = strcat('pitch_imu','.csv');
 
     
 angle_x = 0;
@@ -38,7 +38,8 @@ angle_y = 0;
 angle_z = 0;
 
 % Ros data
-tftree = rostf;
+
+%tftree = rostf;
 
 % tform = rosmessage('geometry_msgs/TransformStamped');
 % tform.ChildFrameId = 'true';
@@ -88,15 +89,16 @@ tform2.Transform.Rotation.Z = 0;
 %         tform.Header.Stamp = rostime('now');
 %         sendTransform(tftree,tform);
 
-        tform2.Transform.Rotation.W = q_eskf_norm(1);
-        tform2.Transform.Rotation.X = q_eskf_norm(2);
-        tform2.Transform.Rotation.Y = q_eskf_norm(3);
-        tform2.Transform.Rotation.Z = q_eskf_norm(4);
-        tform2.Header.Stamp = rostime('now');
-        sendTransform(tftree,tform2);
+ %       tform2.Transform.Rotation.W = q_eskf_norm(1);
+ %      tform2.Transform.Rotation.X = q_eskf_norm(2);
+ %       tform2.Transform.Rotation.Y = q_eskf_norm(3);
+ %       tform2.Transform.Rotation.Z = q_eskf_norm(4);
+ %       tform2.Header.Stamp = rostime('now');
+ %       sendTransform(tftree,tform2);
+
     end
     
-    pause(dt)
+    %pause(dt)
 
  end
  

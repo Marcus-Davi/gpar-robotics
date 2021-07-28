@@ -3,10 +3,15 @@
 % Yaw muito grande
 
 %% Setup
+clear;clc;
+
 motion_filename = './data/movement_imu.csv';
 %motion_filename = '../../datasets/simulation/movimento.csv';
-stationary_filename = '../../data/stationary.csv';
-ground_truth_filename = '../../datasets/simulation/ground_truth.csv';
+%stationary_filename = '../../datasets/simulation/parado.csv';
+stationary_filename = './data/stationary_imu.csv';
+%ground_truth_filename = '../../datasets/simulation/ground_truth.csv';
+ground_truth_filename = './data/true_movement_imu.csv';
+
 
 data = csvread(motion_filename);
 calib = csvread(stationary_filename);
@@ -35,29 +40,33 @@ calib_gyro = [calib(:,4) calib(:,5) calib(:,6)];
 mean_calib_acc = mean(calib_acc);
 mean_calib_gyro = mean(calib_gyro);
 
-%%{
+% Essa correção no acelerômetro não ajuda tanto
+%{
 accx = accx - mean_calib_acc(1,1);
 accy = accy - mean_calib_acc(1,2);
 accz = accz - (9.8 - mean_calib_acc(1,3));
-
+%}
+%%{
 gyrox = gyrox - mean_calib_gyro(1,1);
 gyroy = gyroy - mean_calib_gyro(1,2);
 gyroz = gyroz - mean_calib_gyro(1,3);
 %}
 
 %% Kalman Filter - Setup
-x = [1 0 0 0]; %State Quaternion Vector
+x = [1 0 0 0]'; %State Quaternion Vector
 
 F = eye(4);
 P = eye(4);
 P(4,4) = 0;
-clc
-Q = diag([1 var(calib_gyro)]);
-R = diag(var(calib_acc));
+
+Q = diag(dt^2*[0.01 0.01 0.01]);
+G = [zeros(1,3);eye(3)];
+
+R = diag([0.34335 0.34335 0.5886]);
 
 %% Kalman Filter - For
 for i=1:size
-   q0 = x(1); q1 = x(2); q2 = x(3); q3 = x(4);  
+   q0 = x(1); q1 = x(2); q2 = x(3); q3 = x(4);
    wx = gyrox(i); wy = gyroy(i); wz = gyroz(i);
    
     
@@ -73,21 +82,21 @@ for i=1:size
                  wz   wy -wx 2/dt];
     
    x_ = x + (dt/2)*X;
-   P_ = F*P*F' + Q;
+   P_ = F*P*F' + G*Q*G'
    
   %Measurement
    q0 = x_(1); q1 = x_(2); q2 = x_(3); q3 = x_(4);
    
-   y_ = g*[2*q1*q3-2*q0*q2
-           2*q0*q1+2*q2*q3
-           q0^2-q1^2-q2^2+q3^2];
+    y_ = g*[2*q1*q3-2*q0*q2
+            2*q0*q1+2*q2*q3
+            q0^2-q1^2-q2^2+q3^2];
          
     y = [accx(i) accy(i) accz(i)]';
   
   %Update
-    H = 2.*g.*[-q2  q3 -q0 q1   
-                q1  q0  q3 q2
-                q0 -q1 -q2 q3];
+   H = g*[-2*q2  2*q3 -2*q0  2*q1 
+           2*q1  2*q0  2*q3  2*q2 
+           2*q0 -2*q1 -2*q2  2*q3];
     
     K = P_*H'*(H*P_*H'+R)^-1;
     P = (eye(4)-K*H)*P_;
@@ -99,9 +108,6 @@ for i=1:size
 end
 
 %% Graphs
-
-% Por algum motivo, ao usar quat2eul(output,'XYZ') os ângulos ficam
-% trocados. Verificar isso com o Marcus.
 
 % With ground truth
 %{

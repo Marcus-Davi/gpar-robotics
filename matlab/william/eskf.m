@@ -1,12 +1,11 @@
 % Error State Kalman Filter Quaternion
 
 %% Leitura
-clc;
-movimento_filename = './data/movement_pitch.csv';
+clear;clc;
+movimento_filename = './data/movement_imu.csv';
 %movimento_filename = '../../datasets/simulation/movimento.csv';
-
 %stationary_filename = '../../datasets/simulation/parado.csv';
-stationary_filename = './data/stationary.csv';
+stationary_filename = './data/stationary_imu.csv';
 %ground_truth_filename = '../../datasets/simulation/ground_truth.csv';
 ground_truth_filename = './data/true_movement_imu.csv';
 
@@ -36,7 +35,8 @@ mean_calib_gyro = mean(calib_gyro);
 accx = accx - mean_calib_acc(1,1);
 accy = accy - mean_calib_acc(1,2);
 accz = accz - (9.8 - mean_calib_acc(1,3));
-
+%}
+%%{
 gyrox = gyrox - mean_calib_gyro(1,1);
 gyroy = gyroy - mean_calib_gyro(1,2);
 gyroz = gyroz - mean_calib_gyro(1,3);
@@ -52,11 +52,10 @@ g = 9.8;
 F = eye(6);
 P = zeros(6); %Inialization with 0
 
+%Qn = diag([dt^2*[0.01 0.01 0.01] dt*[0.001 0.001 0.001]]);%6x6
+Qn = diag([dt^2*[0.01 0.01 0.01] dt*[0.001 0.001 0.001]]);
 
-Rn = diag(var(calib_acc));
-Qn = diag([dt^2*var(calib_gyro) dt*[0.001 0.001 0.001]]);%6x6
-
-
+Rn = diag([0.34335 0.34335 0.5886]);
 
 %% ESKF
 for i=1:tam
@@ -77,8 +76,8 @@ for i=1:tam
     F = [quat2rotm((w-wb)*dt) -dt*eye(3)
               zeros(3)           eye(3)];
     
-    P_ = F*P*F' + Qn
-    
+    P_ = F*P*F' + Qn;
+   
     %Measurement
      q0 = x_(1); q1 = x_(2); q2 = x_(3); q3 = x_(4);
      
@@ -118,14 +117,13 @@ for i=1:tam
               q3-q2*dX/2+q1*dY/2+q0*dZ/2];
     x(5:7) = x_(5:7) + dx(4:6);
     
- 
     output(i,1) = normalize(quaternion(x(1),x(2),x(3),x(4)));
 end
 
 %% Visualization
 
 % With ground truth
-%{
+%%{
 euler_eskf = quat2eul(output,'XYZ');
 euler_true = quat2eul(ground_truth,'XYZ');
 
@@ -149,7 +147,7 @@ legend('yaw','true yaw');
 %}
 
 %Without ground truth
-%%{
+%{
 euler_eskf = quat2eul(output,'XYZ');
 
 subplot(3,1,1)
@@ -164,8 +162,6 @@ subplot(3,1,3)
 plot(euler_eskf(:,3),'--');
 title('YAW');
 %}
-
-
 
 %% ROS
 %{
