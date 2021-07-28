@@ -1,4 +1,4 @@
- %clear;close all;clc
+ ;close all;clc
 % leitura do dataset
 
 %verificar os dados gerados pelo script
