@@ -2,10 +2,10 @@
 
 %% Leitura
 clear;clc;
-movimento_filename = './data/movement_imu.csv';
+movimento_filename = './data/movement_pitch.csv';
 %movimento_filename = '../../datasets/simulation/movimento.csv';
 %stationary_filename = '../../datasets/simulation/parado.csv';
-stationary_filename = './data/stationary_imu.csv';
+stationary_filename = './data/stationary.csv';
 %ground_truth_filename = '../../datasets/simulation/ground_truth.csv';
 ground_truth_filename = './data/true_movement_imu.csv';
 
@@ -123,7 +123,7 @@ end
 %% Visualization
 
 % With ground truth
-%%{
+%{
 euler_eskf = quat2eul(output,'XYZ');
 euler_true = quat2eul(ground_truth,'XYZ');
 
@@ -147,7 +147,7 @@ legend('yaw','true yaw');
 %}
 
 %Without ground truth
-%{
+%%{
 euler_eskf = quat2eul(output,'XYZ');
 
 subplot(3,1,1)

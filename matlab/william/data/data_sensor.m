@@ -5,7 +5,7 @@ clear;clc;
 
 ROS_MASTER_IP = '10.0.0.112';
 TOPIC = '/mpu_node/mpu_data';
-size = 2000;
+size = 5000;
 
 rosshutdown;
 rosinit(ROS_MASTER_IP);
@@ -32,7 +32,7 @@ end
 %% Saving Data
 %%{
 file_data = [accx accy accz gyrox gyroy gyroz];
-file_name = 'movement_pitch.csv';
+file_name = 'movement_roll.csv';
 
 csvwrite(file_name,file_data);
 %}

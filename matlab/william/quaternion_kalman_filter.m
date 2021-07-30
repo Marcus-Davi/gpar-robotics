@@ -5,10 +5,10 @@
 %% Setup
 clear;clc;
 
-motion_filename = './data/movement_imu.csv';
+motion_filename = './data/movement_yaw.csv';
 %motion_filename = '../../datasets/simulation/movimento.csv';
 %stationary_filename = '../../datasets/simulation/parado.csv';
-stationary_filename = './data/stationary_imu.csv';
+stationary_filename = './data/stationary.csv';
 %ground_truth_filename = '../../datasets/simulation/ground_truth.csv';
 ground_truth_filename = './data/true_movement_imu.csv';
 
@@ -82,7 +82,7 @@ for i=1:size
                  wz   wy -wx 2/dt];
     
    x_ = x + (dt/2)*X;
-   P_ = F*P*F' + G*Q*G'
+   P_ = F*P*F' + G*Q*G';
    
   %Measurement
    q0 = x_(1); q1 = x_(2); q2 = x_(3); q3 = x_(4);

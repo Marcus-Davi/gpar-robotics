@@ -3,10 +3,10 @@
 %% Setup
 
 clear;clc;
-motion_filename = './data/movement_imu.csv';
+motion_filename = './data/movement_pitch.csv';
 %motion_filename = '../../datasets/rosbags/street_imu.csv';
 %stationary_filename = '../../datasets/simulation/parado.csv';
-stationary_filename = './data/stationary_imu.csv';
+stationary_filename = './data/stationary.csv';
 %ground_truth_filename = '../../datasets/simulation/ground_truth.csv';
 ground_truth_filename = './data/true_movement_imu.csv';
 
@@ -37,7 +37,7 @@ calib_gyro = [calib(:,4) calib(:,5) calib(:,6)];
 mean_calib_acc = mean(calib_acc);
 mean_calib_gyro = mean(calib_gyro);
 
-%%{
+%{
 accx = accx - mean_calib_acc(1,1);
 accy = accy - mean_calib_acc(1,2);
 accz = accz - (9.8 - mean_calib_acc(1,3));
@@ -65,9 +65,10 @@ P(7,7) = 0; % relacionado com a confiança do bias no yaw
 G = [zeros(4,3);eye(3)];
 
 Q = diag(dt^2*[0.013 0.0136 0.0129]); % Process Noise Matrix 3x3
+%Q = diag(dt^2*10^-4*[1.6443 1.1245 2.2742]);
 
 R = diag([0.34335 0.34335 0.5886]);% Measurement Uncertainty 3x3
-
+%R = diag([0.0019 0.0018 0.0039]); 
 %% Kalman Filter - For
 for i=1:size
    q0 = x(1); q1 = x(2); q2 = x(3); q3 = x(4);
@@ -126,7 +127,7 @@ end
 %% Graphs
 
     %With ground truth
-    %%{
+    %{
     euler = quat2eul(output,'XYZ');
     ground_truth = quat2eul(ground_truth,'XYZ');
     
@@ -153,7 +154,7 @@ end
     %}
     
     %Without Ground Truth
-    %{
+    %%{
     euler = quat2eul(output,'XYZ');
     subplot(3,1,1);
     plot(euler(:,1),'--');

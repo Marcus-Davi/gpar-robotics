@@ -42,7 +42,7 @@ var = [var_w_roll 0;0 var_w_pitch];
 
 %% SETUP
 clc;
-motion_filename = './data/movement_roll.csv';
+motion_filename = './data/movement_pitch.csv';
 stationary_filename = './data/stationary.csv';
 
 data = csvread(motion_filename);
@@ -73,11 +73,12 @@ calib_gyro = [calib(:,4) calib(:,5) calib(:,6)];
 mean_calib_acc = mean(calib_acc);
 mean_calib_gyro = mean(calib_gyro);
 
-%%{
+%{
 accx = accx - mean_calib_acc(1,1);
 accy = accy - mean_calib_acc(1,2);
 accz = accz - (9.8 - mean_calib_acc(1,3));
-
+%}
+%%{
 gyrox = gyrox - mean_calib_gyro(1,1);
 gyroy = gyroy - mean_calib_gyro(1,2);
 gyroz = gyroz - mean_calib_gyro(1,3);
@@ -122,8 +123,8 @@ Q = B*var_q*B';
 H = [1 0 0 0;0 0 1 0];
 var_acc = var(calib_acc);
 var_r = [var_acc(1) 0;0 var_acc(2)];
-%R = [0.0075 0;0 0.0071];
-R = var_r;
+R = [0.0075 0;0 0.0071];
+%R = var_r;
 
 %% VARIABLES
 x = [0 0 0 0]';
